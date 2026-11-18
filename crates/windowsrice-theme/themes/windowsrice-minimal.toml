@@ -1,0 +1,138 @@
+# windowsRICE Minimal — solid neutral surfaces, small radii, reduced motion.
+
+[meta]
+schema_version = 1
+id = "windowsrice-minimal"
+name = "windowsRICE Minimal"
+description = "Quiet grayscale surfaces without translucency, an attached bar, small radii and reduced motion."
+author = "windowsRICE"
+version = "1.0.0"
+default_mode = "dark"
+accent_source = "theme"
+tags = ["dark", "light", "minimal", "solid"]
+
+[palette.dark]
+background = "#18191B"
+surface_base = "#1E1F22"
+surface_raised = "#26272B"
+surface_overlay = "#2D2F33"
+border_subtle = "#FFFFFF12"
+border_control = "#FFFFFF61"
+text_primary = "#E6E6E6"
+text_secondary = "#B5B5B8"
+text_muted = "#989A9F"
+text_disabled = "#5F6066"
+text_on_accent = "#111214"
+accent = "#A9B4C8"
+accent_hover = "#BCC5D5"
+accent_pressed = "#96A2B8"
+selection = "#3A3F49"
+focus_ring = "#C9D1DE"
+success = "#7FBF95"
+warning = "#D9B36A"
+danger = "#E08585"
+info = "#8DB6D9"
+shadow = "#00000033"
+
+[palette.light]
+background = "#EDEDEE"
+surface_base = "#F6F6F7"
+surface_raised = "#FFFFFF"
+surface_overlay = "#FFFFFF"
+border_subtle = "#00000014"
+border_control = "#00000075"
+text_primary = "#1D1D1F"
+text_secondary = "#4B4C50"
+text_muted = "#626368"
+text_disabled = "#A6A7AB"
+text_on_accent = "#FFFFFF"
+accent = "#3E4C63"
+accent_hover = "#323E52"
+accent_pressed = "#283244"
+selection = "#DADFE8"
+focus_ring = "#3E4C63"
+success = "#2E7D4F"
+warning = "#8F6200"
+danger = "#B23A3A"
+info = "#2F6E96"
+shadow = "#00000014"
+
+[typography]
+family = "Segoe UI Variable"
+fallback = ["Malgun Gothic"]
+mono_family = "Cascadia Code"
+mono_fallback = ["Consolas", "Malgun Gothic"]
+weight_regular = 400
+weight_emphasis = 500
+weight_strong = 500
+line_height = 1.4
+
+[typography.sizes]
+caption = 11
+body = 13
+body_large = 14
+subtitle = 15
+title = 18
+display = 24
+
+[spacing]
+unit = 4
+xs = 4
+sm = 8
+md = 12
+lg = 16
+xl = 24
+xxl = 32
+
+[radius]
+control = 4
+menu = 6
+card = 8
+panel = 0
+dock = 10
+window = 4
+
+[shadow]
+offset_y = 2
+blur = 6
+
+[materials]
+backdrop = "none"
+surface_opacity = 1.0
+
+[motion]
+level = "reduced"
+duration_fast_ms = 80
+duration_normal_ms = 120
+duration_slow_ms = 160
+easing = [0.2, 0.0, 0.0, 1.0]
+
+[components.bar]
+position = "top"
+height = 30
+floating = false
+margin = 0
+padding_x = 10
+
+[components.dock]
+position = "bottom"
+icon_size = 40
+spacing = 4
+padding = 6
+auto_hide = "always"
+magnification = false
+magnification_scale = 1.0
+
+[components.launcher]
+width = 600
+max_results = 7
+top_offset_percent = 30
+
+[components.widget]
+padding = 12
+gap = 8
+
+[components.window]
+border_width = 1
+corner = "round_small"
+accent_border_on_focus = false

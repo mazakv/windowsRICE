@@ -1,0 +1,140 @@
+# windowsRICE Ambient — warm, low-contrast-feeling (but AA-compliant) tones,
+# Mica backdrop and slower motion. Requests a wallpaper-derived accent;
+# until extraction exists (planned), the palette accent below is used.
+
+[meta]
+schema_version = 1
+id = "windowsrice-ambient"
+name = "windowsRICE Ambient"
+description = "Warm muted tones over Mica with slower, softer motion. Intended to follow the wallpaper accent once extraction is available."
+author = "windowsRICE"
+version = "1.0.0"
+default_mode = "dark"
+accent_source = "wallpaper"
+tags = ["dark", "light", "warm", "calm"]
+
+[palette.dark]
+background = "#1B1814"
+surface_base = "#211D19"
+surface_raised = "#2A2520"
+surface_overlay = "#332D27"
+border_subtle = "#FFFFFF14"
+border_control = "#FFFFFF61"
+text_primary = "#EEE7DE"
+text_secondary = "#C2B8AB"
+text_muted = "#A0968A"
+text_disabled = "#645B51"
+text_on_accent = "#1A140E"
+accent = "#D9A066"
+accent_hover = "#E3B07D"
+accent_pressed = "#C98E55"
+selection = "#4A3826"
+focus_ring = "#EBC08F"
+success = "#8CC48A"
+warning = "#E6C267"
+danger = "#E58A7A"
+info = "#8FB8D0"
+shadow = "#0000004D"
+
+[palette.light]
+background = "#ECE6DD"
+surface_base = "#F6F1EA"
+surface_raised = "#FFFDF9"
+surface_overlay = "#FFFDF9"
+border_subtle = "#2B1D0F1A"
+border_control = "#2B1D0F85"
+text_primary = "#241C14"
+text_secondary = "#54483B"
+text_muted = "#6B5E50"
+text_disabled = "#B3A898"
+text_on_accent = "#FFFFFF"
+accent = "#9A5B1E"
+accent_hover = "#8A5019"
+accent_pressed = "#774414"
+selection = "#F0DEC6"
+focus_ring = "#9A5B1E"
+success = "#3D7A3A"
+warning = "#8C6A0A"
+danger = "#B0402F"
+info = "#3B6E8C"
+shadow = "#2B1D0F1F"
+
+[typography]
+family = "Segoe UI Variable"
+fallback = ["Malgun Gothic"]
+mono_family = "Cascadia Code"
+mono_fallback = ["Consolas", "Malgun Gothic"]
+weight_regular = 400
+weight_emphasis = 500
+weight_strong = 600
+line_height = 1.5
+
+[typography.sizes]
+caption = 12
+body = 14
+body_large = 15
+subtitle = 17
+title = 22
+display = 30
+
+[spacing]
+unit = 4
+xs = 4
+sm = 8
+md = 12
+lg = 16
+xl = 24
+xxl = 36
+
+[radius]
+control = 8
+menu = 12
+card = 16
+panel = 12
+dock = 18
+window = 8
+
+[shadow]
+offset_y = 8
+blur = 28
+
+[materials]
+backdrop = "mica"
+surface_opacity = 0.9
+
+[motion]
+level = "full"
+duration_fast_ms = 160
+duration_normal_ms = 240
+duration_slow_ms = 320
+easing = [0.4, 0.0, 0.2, 1.0]
+
+[components.bar]
+position = "top"
+height = 34
+floating = true
+margin = 10
+padding_x = 14
+
+[components.dock]
+position = "bottom"
+icon_size = 44
+spacing = 6
+padding = 8
+auto_hide = "smart"
+magnification = false
+magnification_scale = 1.0
+
+[components.launcher]
+width = 640
+max_results = 7
+top_offset_percent = 30
+
+[components.widget]
+padding = 18
+gap = 14
+
+[components.window]
+border_width = 1
+corner = "round"
+accent_border_on_focus = false

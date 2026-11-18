@@ -1,0 +1,140 @@
+# windowsRICE macOS Inspired — interaction patterns inspired by macOS
+# (attached menu bar, magnifying dock, generous radii). Original colors;
+# uses Windows system fonts and no Apple assets.
+
+[meta]
+schema_version = 1
+id = "windowsrice-macos-inspired"
+name = "windowsRICE macOS Inspired"
+description = "Attached slim menu bar, magnifying dock and generous corner radii, using original colors and Windows system fonts."
+author = "windowsRICE"
+version = "1.0.0"
+default_mode = "dark"
+accent_source = "theme"
+tags = ["dark", "light", "dock", "rounded"]
+
+[palette.dark]
+background = "#1A1A1C"
+surface_base = "#1F1F22"
+surface_raised = "#2A2A2E"
+surface_overlay = "#323236"
+border_subtle = "#FFFFFF14"
+border_control = "#FFFFFF61"
+text_primary = "#ECECEE"
+text_secondary = "#B8B8BD"
+text_muted = "#9C9CA3"
+text_disabled = "#5E5E64"
+text_on_accent = "#0D0F12"
+accent = "#4C8DF6"
+accent_hover = "#6A9FF7"
+accent_pressed = "#3B7DE6"
+selection = "#2D4466"
+focus_ring = "#7FB0FA"
+success = "#5CC97E"
+warning = "#E8B957"
+danger = "#F07470"
+info = "#64B5E8"
+shadow = "#00000052"
+
+[palette.light]
+background = "#ECECEE"
+surface_base = "#F5F5F7"
+surface_raised = "#FFFFFF"
+surface_overlay = "#FFFFFF"
+border_subtle = "#0000001A"
+border_control = "#00000075"
+text_primary = "#1C1C1E"
+text_secondary = "#48484D"
+text_muted = "#636368"
+text_disabled = "#A8A8AD"
+text_on_accent = "#FFFFFF"
+accent = "#2468D6"
+accent_hover = "#1F5DC2"
+accent_pressed = "#1A50A8"
+selection = "#D3E2FA"
+focus_ring = "#2468D6"
+success = "#24894C"
+warning = "#A3650A"
+danger = "#C7362F"
+info = "#1E78A8"
+shadow = "#00000021"
+
+[typography]
+family = "Segoe UI Variable"
+fallback = ["Malgun Gothic"]
+mono_family = "Cascadia Code"
+mono_fallback = ["Consolas", "Malgun Gothic"]
+weight_regular = 400
+weight_emphasis = 500
+weight_strong = 600
+line_height = 1.45
+
+[typography.sizes]
+caption = 11
+body = 13
+body_large = 14
+subtitle = 16
+title = 20
+display = 28
+
+[spacing]
+unit = 4
+xs = 4
+sm = 8
+md = 12
+lg = 16
+xl = 24
+xxl = 32
+
+[radius]
+control = 6
+menu = 10
+card = 16
+panel = 0
+dock = 18
+window = 10
+
+[shadow]
+offset_y = 10
+blur = 30
+
+[materials]
+backdrop = "acrylic"
+surface_opacity = 0.9
+
+[motion]
+level = "full"
+duration_fast_ms = 140
+duration_normal_ms = 220
+duration_slow_ms = 300
+easing = [0.25, 0.1, 0.25, 1.0]
+
+[components.bar]
+position = "top"
+height = 28
+floating = false
+margin = 0
+padding_x = 14
+
+[components.dock]
+position = "bottom"
+icon_size = 48
+spacing = 6
+padding = 8
+auto_hide = "never"
+magnification = true
+magnification_scale = 1.6
+
+[components.launcher]
+width = 680
+max_results = 8
+top_offset_percent = 24
+
+[components.widget]
+padding = 16
+gap = 12
+
+[components.window]
+border_width = 1
+corner = "round"
+accent_border_on_focus = false

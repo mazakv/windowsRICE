@@ -1,0 +1,140 @@
+# windowsRICE Glass — the most translucent preset. Surfaces are drawn at 55%
+# over DWM Acrylic. Validation reports legibility warnings for this preset by
+# design; the renderer must keep the acrylic tint layer enabled.
+
+[meta]
+schema_version = 1
+id = "windowsrice-glass"
+name = "windowsRICE Glass"
+description = "Highly translucent acrylic surfaces with soft borders and larger radii. Legibility depends on the wallpaper."
+author = "windowsRICE"
+version = "1.0.0"
+default_mode = "dark"
+accent_source = "theme"
+tags = ["dark", "light", "translucent"]
+
+[palette.dark]
+background = "#12151B"
+surface_base = "#191D25"
+surface_raised = "#20252F"
+surface_overlay = "#272D39"
+border_subtle = "#FFFFFF1F"
+border_control = "#FFFFFF66"
+text_primary = "#F0F3F7"
+text_secondary = "#BAC2CE"
+text_muted = "#98A1AE"
+text_disabled = "#5A6271"
+text_on_accent = "#0B1018"
+accent = "#7DB8F0"
+accent_hover = "#95C6F3"
+accent_pressed = "#67A8E6"
+selection = "#2B4766"
+focus_ring = "#A8D1F7"
+success = "#74D3A0"
+warning = "#EBC173"
+danger = "#F28B8B"
+info = "#7DCFE8"
+shadow = "#0000004D"
+
+[palette.light]
+background = "#E6E9EE"
+surface_base = "#F2F4F7"
+surface_raised = "#FFFFFF"
+surface_overlay = "#FFFFFF"
+border_subtle = "#0000001A"
+border_control = "#00000075"
+text_primary = "#161A21"
+text_secondary = "#444B57"
+text_muted = "#5B6370"
+text_disabled = "#A0A6B0"
+text_on_accent = "#FFFFFF"
+accent = "#2B6CB8"
+accent_hover = "#255FA3"
+accent_pressed = "#1F5190"
+selection = "#D2E1F4"
+focus_ring = "#2B6CB8"
+success = "#1E8550"
+warning = "#9C6500"
+danger = "#BF3A3A"
+info = "#1F74A0"
+shadow = "#0000001F"
+
+[typography]
+family = "Segoe UI Variable"
+fallback = ["Malgun Gothic"]
+mono_family = "Cascadia Code"
+mono_fallback = ["Consolas", "Malgun Gothic"]
+weight_regular = 400
+weight_emphasis = 500
+weight_strong = 600
+line_height = 1.45
+
+[typography.sizes]
+caption = 11
+body = 13
+body_large = 14
+subtitle = 16
+title = 20
+display = 28
+
+[spacing]
+unit = 4
+xs = 4
+sm = 8
+md = 12
+lg = 16
+xl = 24
+xxl = 32
+
+[radius]
+control = 8
+menu = 12
+card = 16
+panel = 12
+dock = 20
+window = 8
+
+[shadow]
+offset_y = 12
+blur = 32
+
+[materials]
+backdrop = "acrylic"
+surface_opacity = 0.55
+
+[motion]
+level = "full"
+duration_fast_ms = 140
+duration_normal_ms = 220
+duration_slow_ms = 300
+easing = [0.2, 0.0, 0.0, 1.0]
+
+[components.bar]
+position = "top"
+height = 36
+floating = true
+margin = 10
+padding_x = 14
+
+[components.dock]
+position = "bottom"
+icon_size = 46
+spacing = 6
+padding = 10
+auto_hide = "smart"
+magnification = false
+magnification_scale = 1.0
+
+[components.launcher]
+width = 660
+max_results = 8
+top_offset_percent = 28
+
+[components.widget]
+padding = 18
+gap = 12
+
+[components.window]
+border_width = 1
+corner = "round"
+accent_border_on_focus = true

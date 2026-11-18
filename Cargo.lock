@@ -597,6 +597,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "windowsrice-theme"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "thiserror",
+ "toml",
+]
+
+[[package]]
 name = "windowsrice-windows"
 version = "0.1.0"
 dependencies = [

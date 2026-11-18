@@ -1,0 +1,116 @@
+# windowsRICE Light — a light-only preset with cool neutrals and a teal-blue
+# accent, for users who prefer light mode everywhere.
+
+[meta]
+schema_version = 1
+id = "windowsrice-light"
+name = "windowsRICE Light"
+description = "Light-only theme with cool neutral surfaces, a teal-blue accent and subtle acrylic translucency."
+author = "windowsRICE"
+version = "1.0.0"
+default_mode = "light"
+accent_source = "theme"
+tags = ["light", "bright"]
+
+[palette.light]
+background = "#EEF1F4"
+surface_base = "#F8F9FB"
+surface_raised = "#FFFFFF"
+surface_overlay = "#FFFFFF"
+border_subtle = "#0000001A"
+border_control = "#00000075"
+text_primary = "#1A1D23"
+text_secondary = "#464C57"
+text_muted = "#5C6370"
+text_disabled = "#A4AAB4"
+text_on_accent = "#FFFFFF"
+accent = "#0F6E8C"
+accent_hover = "#0C5F79"
+accent_pressed = "#0A5066"
+selection = "#CDE7EF"
+focus_ring = "#0F6E8C"
+success = "#1E8550"
+warning = "#9C6500"
+danger = "#BF3A3A"
+info = "#2A6FC0"
+shadow = "#0000001C"
+
+[typography]
+family = "Segoe UI Variable"
+fallback = ["Malgun Gothic"]
+mono_family = "Cascadia Code"
+mono_fallback = ["Consolas", "Malgun Gothic"]
+weight_regular = 400
+weight_emphasis = 500
+weight_strong = 600
+line_height = 1.45
+
+[typography.sizes]
+caption = 11
+body = 13
+body_large = 14
+subtitle = 16
+title = 20
+display = 28
+
+[spacing]
+unit = 4
+xs = 4
+sm = 8
+md = 12
+lg = 16
+xl = 24
+xxl = 32
+
+[radius]
+control = 6
+menu = 10
+card = 14
+panel = 10
+dock = 16
+window = 8
+
+[shadow]
+offset_y = 6
+blur = 20
+
+[materials]
+backdrop = "acrylic"
+surface_opacity = 0.8
+
+[motion]
+level = "full"
+duration_fast_ms = 120
+duration_normal_ms = 180
+duration_slow_ms = 240
+easing = [0.2, 0.0, 0.0, 1.0]
+
+[components.bar]
+position = "top"
+height = 34
+floating = true
+margin = 8
+padding_x = 12
+
+[components.dock]
+position = "bottom"
+icon_size = 44
+spacing = 6
+padding = 8
+auto_hide = "smart"
+magnification = false
+magnification_scale = 1.0
+
+[components.launcher]
+width = 640
+max_results = 8
+top_offset_percent = 28
+
+[components.widget]
+padding = 16
+gap = 12
+
+[components.window]
+border_width = 1
+corner = "round"
+accent_border_on_focus = true

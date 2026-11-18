@@ -1,0 +1,140 @@
+# windowsRICE Default — the first-run theme.
+# Balanced dark-neutral foundation with a full light counterpart,
+# subtle acrylic translucency and restrained motion.
+
+[meta]
+schema_version = 1
+id = "windowsrice-default"
+name = "windowsRICE Default"
+description = "Balanced dark-neutral desktop with a matching light mode, subtle translucency and a calm blue accent."
+author = "windowsRICE"
+version = "1.0.0"
+default_mode = "dark"
+accent_source = "theme"
+tags = ["dark", "light", "balanced"]
+
+[palette.dark]
+background = "#15171C"
+surface_base = "#1B1D23"
+surface_raised = "#23262E"
+surface_overlay = "#2B2F38"
+border_subtle = "#FFFFFF14"
+border_control = "#FFFFFF61"
+text_primary = "#E8EAEE"
+text_secondary = "#B4BAC4"
+text_muted = "#9198A4"
+text_disabled = "#5D636E"
+text_on_accent = "#0E1116"
+accent = "#5BA4E6"
+accent_hover = "#74B3EC"
+accent_pressed = "#4A93D6"
+selection = "#2C4A6B"
+focus_ring = "#8CC2F2"
+success = "#5FBF8A"
+warning = "#E3B35B"
+danger = "#E8787A"
+info = "#6FB7D9"
+shadow = "#00000047"
+
+[palette.light]
+background = "#E9EBEF"
+surface_base = "#F4F5F7"
+surface_raised = "#FFFFFF"
+surface_overlay = "#FFFFFF"
+border_subtle = "#0000001A"
+border_control = "#00000075"
+text_primary = "#1E2128"
+text_secondary = "#4A505B"
+text_muted = "#5F6672"
+text_disabled = "#A3A8B1"
+text_on_accent = "#FFFFFF"
+accent = "#2A6FC0"
+accent_hover = "#2563AD"
+accent_pressed = "#1F5596"
+selection = "#CFE0F5"
+focus_ring = "#1F5FAE"
+success = "#1E8A52"
+warning = "#A86A00"
+danger = "#C23B3B"
+info = "#1F7FA8"
+shadow = "#0000001F"
+
+[typography]
+family = "Segoe UI Variable"
+fallback = ["Malgun Gothic"]
+mono_family = "Cascadia Code"
+mono_fallback = ["Consolas", "Malgun Gothic"]
+weight_regular = 400
+weight_emphasis = 500
+weight_strong = 600
+line_height = 1.45
+
+[typography.sizes]
+caption = 11
+body = 13
+body_large = 14
+subtitle = 16
+title = 20
+display = 28
+
+[spacing]
+unit = 4
+xs = 4
+sm = 8
+md = 12
+lg = 16
+xl = 24
+xxl = 32
+
+[radius]
+control = 6
+menu = 10
+card = 14
+panel = 10
+dock = 16
+window = 8
+
+[shadow]
+offset_y = 8
+blur = 24
+
+[materials]
+backdrop = "acrylic"
+surface_opacity = 0.88
+
+[motion]
+level = "full"
+duration_fast_ms = 120
+duration_normal_ms = 180
+duration_slow_ms = 240
+easing = [0.2, 0.0, 0.0, 1.0]
+
+[components.bar]
+position = "top"
+height = 34
+floating = true
+margin = 8
+padding_x = 12
+
+[components.dock]
+position = "bottom"
+icon_size = 44
+spacing = 6
+padding = 8
+auto_hide = "smart"
+magnification = false
+magnification_scale = 1.0
+
+[components.launcher]
+width = 640
+max_results = 8
+top_offset_percent = 28
+
+[components.widget]
+padding = 16
+gap = 12
+
+[components.window]
+border_width = 1
+corner = "round"
+accent_border_on_focus = true

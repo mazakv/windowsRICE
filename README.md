@@ -4,7 +4,7 @@ windowsRICE is a Rust-based desktop customization environment for Windows 11 Pro
 
 ## Status
 
-Phase 1 (project foundation). Nothing in the current build changes Windows settings.
+Phase 2 (design system). Nothing in the current build changes Windows settings.
 
 | Component | Status | Notes |
 |---|---|---|
@@ -12,6 +12,8 @@ Phase 1 (project foundation). Nothing in the current build changes Windows setti
 | `windowsrice-journal` | IMPLEMENTED, TESTED | Append-only change journal for backup, verification and rollback |
 | `windowsrice-windows` | IMPLEMENTED, TESTED | Read-only Windows queries: OS, CPU, memory, displays, GPUs, session |
 | `windowsrice-diag` | IMPLEMENTED, TESTED | Read-only diagnostics CLI |
+| `windowsrice-theme` | IMPLEMENTED, TESTED | Design tokens, 8 built-in presets, TOML parsing, validation, WCAG AA contrast checks |
+| Theme engine (switching, persistence), UI | PLANNED | Later phases |
 | Desktop, bar, dock, launcher, widgets | PLANNED | Later phases |
 
 ## Safety model
@@ -28,6 +30,7 @@ Phase 1 (project foundation). Nothing in the current build changes Windows setti
 crates/windowsrice-core      platform-independent core
 crates/windowsrice-journal   change journal
 crates/windowsrice-windows   Windows integration (read-only in Phase 1)
+crates/windowsrice-theme     design system and built-in presets (themes/*.toml)
 apps/diag                    windowsrice-diag
 ```
 

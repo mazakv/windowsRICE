@@ -1,0 +1,116 @@
+# windowsRICE HYPR — tiling-oriented: sharp corners, visible focus borders,
+# floating gapped bar, quick motion. Original palette; no third-party assets.
+
+[meta]
+schema_version = 1
+id = "windowsrice-hypr"
+name = "windowsRICE HYPR"
+description = "Tiling-oriented look with square windows, accent focus borders, a gapped floating bar and quick motion."
+author = "windowsRICE"
+version = "1.0.0"
+default_mode = "dark"
+accent_source = "theme"
+tags = ["dark", "tiling", "compact"]
+
+[palette.dark]
+background = "#101318"
+surface_base = "#151920"
+surface_raised = "#1B2029"
+surface_overlay = "#222834"
+border_subtle = "#FFFFFF12"
+border_control = "#FFFFFF66"
+text_primary = "#E3E8EF"
+text_secondary = "#AEB6C2"
+text_muted = "#8D97A5"
+text_disabled = "#545C69"
+text_on_accent = "#0B1014"
+accent = "#4FD1C5"
+accent_hover = "#6BDBD0"
+accent_pressed = "#3DBDB1"
+selection = "#1F4A49"
+focus_ring = "#7FE3D9"
+success = "#66CC8A"
+warning = "#E5C07B"
+danger = "#EF7B7B"
+info = "#6CB6FF"
+shadow = "#00000059"
+
+[typography]
+family = "Segoe UI Variable"
+fallback = ["Malgun Gothic"]
+mono_family = "Cascadia Code"
+mono_fallback = ["Consolas", "Malgun Gothic"]
+weight_regular = 400
+weight_emphasis = 500
+weight_strong = 600
+line_height = 1.4
+
+[typography.sizes]
+caption = 11
+body = 13
+body_large = 14
+subtitle = 15
+title = 18
+display = 26
+
+[spacing]
+unit = 4
+xs = 4
+sm = 8
+md = 12
+lg = 16
+xl = 20
+xxl = 28
+
+[radius]
+control = 2
+menu = 4
+card = 6
+panel = 4
+dock = 8
+window = 0
+
+[shadow]
+offset_y = 4
+blur = 12
+
+[materials]
+backdrop = "acrylic"
+surface_opacity = 0.88
+
+[motion]
+level = "full"
+duration_fast_ms = 90
+duration_normal_ms = 140
+duration_slow_ms = 200
+easing = [0.3, 0.0, 0.0, 1.0]
+
+[components.bar]
+position = "top"
+height = 30
+floating = true
+margin = 10
+padding_x = 12
+
+[components.dock]
+position = "bottom"
+icon_size = 40
+spacing = 4
+padding = 6
+auto_hide = "smart"
+magnification = false
+magnification_scale = 1.0
+
+[components.launcher]
+width = 620
+max_results = 8
+top_offset_percent = 26
+
+[components.widget]
+padding = 14
+gap = 10
+
+[components.window]
+border_width = 2
+corner = "square"
+accent_border_on_focus = true

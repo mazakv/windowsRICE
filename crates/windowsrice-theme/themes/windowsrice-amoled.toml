@@ -1,0 +1,116 @@
+# windowsRICE AMOLED — true-black surfaces for OLED displays. No translucency,
+# no shadows, reduced motion. Dark only.
+
+[meta]
+schema_version = 1
+id = "windowsrice-amoled"
+name = "windowsRICE AMOLED"
+description = "True-black solid surfaces for OLED displays, with no shadows, no translucency and reduced motion."
+author = "windowsRICE"
+version = "1.0.0"
+default_mode = "dark"
+accent_source = "theme"
+tags = ["dark", "oled", "solid"]
+
+[palette.dark]
+background = "#000000"
+surface_base = "#000000"
+surface_raised = "#0B0B0C"
+surface_overlay = "#141416"
+border_subtle = "#FFFFFF1A"
+border_control = "#FFFFFF66"
+text_primary = "#E4E4E7"
+text_secondary = "#ABABB0"
+text_muted = "#8A8A90"
+text_disabled = "#4D4D52"
+text_on_accent = "#000000"
+accent = "#5EA8FF"
+accent_hover = "#7AB8FF"
+accent_pressed = "#4A95EB"
+selection = "#10263F"
+focus_ring = "#8FC3FF"
+success = "#52C47F"
+warning = "#E0B050"
+danger = "#F06A6A"
+info = "#57C2E0"
+shadow = "#00000000"
+
+[typography]
+family = "Segoe UI Variable"
+fallback = ["Malgun Gothic"]
+mono_family = "Cascadia Code"
+mono_fallback = ["Consolas", "Malgun Gothic"]
+weight_regular = 400
+weight_emphasis = 500
+weight_strong = 600
+line_height = 1.45
+
+[typography.sizes]
+caption = 11
+body = 13
+body_large = 14
+subtitle = 16
+title = 20
+display = 28
+
+[spacing]
+unit = 4
+xs = 4
+sm = 8
+md = 12
+lg = 16
+xl = 24
+xxl = 32
+
+[radius]
+control = 6
+menu = 8
+card = 12
+panel = 0
+dock = 14
+window = 6
+
+[shadow]
+offset_y = 0
+blur = 0
+
+[materials]
+backdrop = "none"
+surface_opacity = 1.0
+
+[motion]
+level = "reduced"
+duration_fast_ms = 80
+duration_normal_ms = 120
+duration_slow_ms = 160
+easing = [0.2, 0.0, 0.0, 1.0]
+
+[components.bar]
+position = "top"
+height = 32
+floating = false
+margin = 0
+padding_x = 12
+
+[components.dock]
+position = "bottom"
+icon_size = 42
+spacing = 6
+padding = 8
+auto_hide = "always"
+magnification = false
+magnification_scale = 1.0
+
+[components.launcher]
+width = 640
+max_results = 8
+top_offset_percent = 28
+
+[components.widget]
+padding = 14
+gap = 10
+
+[components.window]
+border_width = 1
+corner = "round_small"
+accent_border_on_focus = true
