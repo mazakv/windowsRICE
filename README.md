@@ -4,17 +4,21 @@ windowsRICE is a Rust-based desktop customization environment for Windows 11 Pro
 
 ## Status
 
-Phase 2 (design system). Nothing in the current build changes Windows settings.
+Phase 3 (theme engine). Nothing in the current build changes Windows settings, and no shipped executable uses the theme engine yet.
 
 | Component | Status | Notes |
 |---|---|---|
-| `windowsrice-core` | IMPLEMENTED, TESTED | Configuration, paths, logging, hotkey model, capability model |
+| `windowsrice-core` | IMPLEMENTED, TESTED | Configuration (schema v2 with v1 migration), paths, logging, hotkey model, capability model |
 | `windowsrice-journal` | IMPLEMENTED, TESTED | Append-only change journal for backup, verification and rollback |
 | `windowsrice-windows` | IMPLEMENTED, TESTED | Read-only Windows queries: OS, CPU, memory, displays, GPUs, session |
 | `windowsrice-diag` | IMPLEMENTED, TESTED | Read-only diagnostics CLI |
-| `windowsrice-theme` | IMPLEMENTED, TESTED | Design tokens, 8 built-in presets, TOML parsing, validation, WCAG AA contrast checks |
-| Theme engine (switching, persistence), UI | PLANNED | Later phases |
+| `windowsrice-theme` | IMPLEMENTED, TESTED | Design tokens, 8 built-in presets, validation, WCAG AA contrast checks, theme catalog, activation with rollback, fallback to windowsRICE Default, selection saved in `config.toml` |
+| Renderer, Theme Studio | PLANNED | Later phases |
 | Desktop, bar, dock, launcher, widgets | PLANNED | Later phases |
+
+### Accessibility note: windowsRICE Glass
+
+windowsRICE Glass passes every WCAG AA check with its opaque colors, which are used whenever transparency is off. When drawn translucently at 55% surface opacity, the pessimistic worst case (pure white or black behind the panel) drops text contrast to 1.88:1 (dark) and 2.41:1 (light), below the 4.5:1 AA threshold. Glass is therefore not described as fully accessible in translucent use. The engine reports these warnings whenever Glass is activated. Adjustable opacity, solid text backplates and a reduced-transparency fallback will be evaluated once real rendering exists.
 
 ## Safety model
 
@@ -30,7 +34,7 @@ Phase 2 (design system). Nothing in the current build changes Windows settings.
 crates/windowsrice-core      platform-independent core
 crates/windowsrice-journal   change journal
 crates/windowsrice-windows   Windows integration (read-only in Phase 1)
-crates/windowsrice-theme     design system and built-in presets (themes/*.toml)
+crates/windowsrice-theme     design system, built-in presets (themes/*.toml) and theme engine
 apps/diag                    windowsrice-diag
 ```
 

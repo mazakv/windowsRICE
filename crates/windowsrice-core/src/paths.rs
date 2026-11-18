@@ -50,6 +50,12 @@ impl AppPaths {
         self.journal_dir.join("changes.jsonl")
     }
 
+    /// User-installed theme files (`*.toml`). Roams with the profile. Not
+    /// created automatically; a missing directory means no user themes.
+    pub fn user_themes_dir(&self) -> PathBuf {
+        self.config_dir.join("themes")
+    }
+
     /// Creates all application directories. Read-only tools must not call this.
     pub fn ensure_dirs(&self) -> Result<()> {
         for dir in [

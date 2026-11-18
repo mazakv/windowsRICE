@@ -601,8 +601,10 @@ name = "windowsrice-theme"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "tempfile",
  "thiserror",
  "toml",
+ "windowsrice-core",
 ]
 
 [[package]]
