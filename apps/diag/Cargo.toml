@@ -1,0 +1,19 @@
+[package]
+name = "windowsrice-diag"
+description = "windowsRICE read-only diagnostics: environment, hardware, displays and capability report"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "windowsrice-diag"
+path = "src/main.rs"
+
+[dependencies]
+windowsrice-core.workspace = true
+windowsrice-windows.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

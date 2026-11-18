@@ -1,0 +1,15 @@
+# Rust build output
+/target/
+target/
+
+# Obsidian vault configuration and trash (user-owned, not part of the source tree)
+.obsidian/
+.trash/
+
+# Logs
+*.log
+/logs/
+
+# Diagnostic exports (may contain machine-specific details)
+/diagnostics-export/
+*.diag.json
