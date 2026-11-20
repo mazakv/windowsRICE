@@ -1,0 +1,16 @@
+﻿ToolBar    id=bar                      name="windowsRICE bar" focusable=False enabled=True bounds=[0,0,3840x51] patterns=
+Group      id=region.left              name="Left section" focusable=False enabled=True bounds=[18,6,294x39] patterns=
+Button     id=module.menu              name="windowsRICE menu" focusable=True enabled=True bounds=[18,6,42x39] patterns=InvokePattern,ExpandCollapsePattern
+Text       id=module.active-window     name="Active window: Documents - File Explorer" focusable=True enabled=True bounds=[66,6,246x39] patterns=
+Group      id=region.center            name="Center section" focusable=False enabled=True bounds=[1831,6,178x39] patterns=
+Text       id=module.clock             name="Clock: 15:58, Thursday, November 19, 2026" focusable=True enabled=True bounds=[1831,6,178x39] patterns=
+Group      id=region.right             name="Right section" focusable=False enabled=True bounds=[2959,6,863x39] patterns=
+Text       id=module.download          name="Download speed 2 KB/s" focusable=True enabled=True bounds=[2959,6,108x39] patterns=
+Text       id=module.upload            name="Upload speed 3 KB/s" focusable=True enabled=True bounds=[3073,6,108x39] patterns=
+Text       id=module.network           name="Network: connected to the internet, wired" focusable=True enabled=True bounds=[3187,6,46x39] patterns=
+Text       id=module.volume            name="Volume 98%" focusable=True enabled=True bounds=[3239,6,90x39] patterns=
+Text       id=module.cpu               name="CPU usage 7%" focusable=True enabled=True bounds=[3335,6,93x39] patterns=
+Text       id=module.gpu               name="GPU usage 2%" focusable=True enabled=True bounds=[3434,6,94x39] patterns=
+Text       id=module.vram              name="Video memory: 3.5 GB of 15.9 GB used (22%)" focusable=True enabled=True bounds=[3534,6,121x39] patterns=
+Text       id=module.ram               name="Memory: 17.5 GB of 31.9 GB used (55%)" focusable=True enabled=True bounds=[3661,6,109x39] patterns=
+Text       id=module.notifications     name="Notifications: on" focusable=True enabled=True bounds=[3776,6,46x39] patterns=

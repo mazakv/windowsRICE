@@ -1,0 +1,62 @@
+{
+  "backdrop": "Acrylic",
+  "candidate": "slint",
+  "first_frame_ms_since_process_creation": 460.0,
+  "frame_times_s": [
+    0.2133387,
+    0.2313088,
+    3.2894052,
+    3.7353435,
+    4.2094506,
+    4.215798,
+    4.222132,
+    4.2283201,
+    4.2346357,
+    4.2408799,
+    4.2469156,
+    4.2529571,
+    4.2590104,
+    4.2655108,
+    4.2716298,
+    4.2777436,
+    4.2837986,
+    4.28987,
+    4.2959237,
+    4.3019549999999995,
+    4.3080681,
+    4.3140899,
+    4.3202473,
+    4.3262489,
+    4.3330232,
+    4.3391858,
+    4.3453277,
+    4.3514163,
+    4.357497,
+    4.3635895,
+    4.3700764,
+    4.3762757,
+    4.382582,
+    4.3887244,
+    4.3948709,
+    4.400911
+  ],
+  "frames_total": 36,
+  "interactions": [
+    {
+      "anim_frames": 31,
+      "anim_ms": 185.79139999999998,
+      "latency_ms": 0.3713
+    }
+  ],
+  "renderer": "Slint 1.19.0, winit 0.30 backend, FemtoVG renderer (OpenGL via WGL)",
+  "run_seconds": 14.0086073,
+  "scale": 1.5,
+  "window_log": [
+    "topmost+toolwindow: true",
+    "dark mode: true",
+    "round corners: true",
+    "extend frame: true",
+    "system backdrop DWM_SYSTEMBACKDROP_TYPE(3): true",
+    "applied after 230 ms"
+  ]
+}

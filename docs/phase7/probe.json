@@ -1,0 +1,134 @@
+﻿[
+    {
+        "step":  "theme windowsrice-glass",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #222329-\u003e#34363A h 51-\u003e54 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "theme windowsrice-ambient",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #34363A-\u003e#211D1A h 54-\u003e51 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "theme windowsrice-light",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #211D1A-\u003e#F0F1F3 h 51-\u003e51 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "theme windowsrice-amoled",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #F0F1F3-\u003e#000000 h 51-\u003e48 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "theme windowsrice-hypr",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #000000-\u003e#1C2026 h 48-\u003e45 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "theme windowsrice-default",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #1C2026-\u003e#222329 h 45-\u003e51 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "mode light",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #222329-\u003e#F0F1F3 h 51-\u003e51 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "mode dark",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #F0F1F3-\u003e#222329 h 51-\u003e51 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "background swatch",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #222329-\u003e#1D2A23 h 51-\u003e51 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "accent swatch",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #1D2A23-\u003e#1D2A23 h 51-\u003e51 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "text colour",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #1D2A23-\u003e#1D2A23 h 51-\u003e51 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "opacity down x3",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #1D2A23-\u003e#27312C h 51-\u003e51 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "bottom border",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #27312C-\u003e#27312C h 51-\u003e51 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "separators",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #27312C-\u003e#27312C h 51-\u003e51 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "font family",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #27312C-\u003e#27312C h 51-\u003e51 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "font size up x3",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #27312C-\u003e#27312C h 51-\u003e51 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "font weight 500",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #27312C-\u003e#27312C h 51-\u003e51 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "labels off",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #27312C-\u003e#27312C h 51-\u003e51 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "height up x4",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #27312C-\u003e#27312C h 51-\u003e63 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "padding up x4",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #27312C-\u003e#27312C h 63-\u003e63 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "spacing up x4",
+        "config":  "changed",
+        "bar":  "visible",
+        "detail":  "bg #27312C-\u003e#27312C h 63-\u003e63 | Applied and saved. The bar has been updated."
+    },
+    {
+        "step":  "valign top",
+        "config":  "same",
+        "bar":  "no draft change",
+        "detail":  "Applied and saved. The bar has been updated."
+    }
+]

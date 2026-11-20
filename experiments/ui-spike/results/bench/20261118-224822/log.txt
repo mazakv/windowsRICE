@@ -1,0 +1,23 @@
+[22:50:16] startup done (30 launches)
+[22:51:16] interaction slint-femtovg exit=0
+[22:52:16] interaction slint-software exit=0
+[22:53:17] interaction d2d exit=0
+[22:53:17] idle slint-femtovg-rep1 pid=13728 warm-up 300s
+[23:08:22] idle slint-femtovg-rep1 done cpu_s=0.047 exit=0
+[23:08:27] idle slint-software-rep1 pid=38412 warm-up 300s
+[23:23:32] idle slint-software-rep1 done cpu_s=0.078 exit=0
+[23:23:37] idle d2d-rep1 pid=42316 warm-up 300s
+[23:38:42] idle d2d-rep1 done cpu_s=0.109 exit=0
+[23:38:47] idle slint-femtovg-rep2 pid=3200 warm-up 300s
+[23:53:53] idle slint-femtovg-rep2 done cpu_s=0.016 exit=0
+[23:53:58] idle slint-software-rep2 pid=19092 warm-up 300s
+[00:09:03] idle slint-software-rep2 done cpu_s=0.016 exit=0
+[00:09:08] idle d2d-rep2 pid=13408 warm-up 300s
+[00:24:13] idle d2d-rep2 done cpu_s=0 exit=0
+[00:24:18] idle slint-femtovg-rep3 pid=4920 warm-up 300s
+[00:39:24] idle slint-femtovg-rep3 done cpu_s=0 exit=0
+[00:39:29] idle slint-software-rep3 pid=6260 warm-up 300s
+[00:54:34] idle slint-software-rep3 done cpu_s=0 exit=0
+[00:54:39] idle d2d-rep3 pid=7052 warm-up 300s
+[01:09:44] idle d2d-rep3 done cpu_s=0.016 exit=0
+[01:09:49] benchmark complete: <project>\experiments\ui-spike\results\bench\20261118-224822

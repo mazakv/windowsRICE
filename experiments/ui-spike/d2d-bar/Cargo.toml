@@ -1,0 +1,12 @@
+[package]
+name = "d2d-bar"
+description = "UI spike candidate B: Direct2D + DirectWrite + DirectComposition top bar (EXPERIMENTAL)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+spike-common.workspace = true
+windows.workspace = true
+windows-numerics = "0.3"

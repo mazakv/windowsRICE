@@ -1,0 +1,167 @@
+﻿[
+    {
+        "check":  "release bar and Design Studio are running",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "style card selected (whole card is the target)",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "draft marked unapplied",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "Light Modern reaches the real bar (light surface)",
+        "pass":  true,
+        "detail":  "bar #EBEDF1; Applied and saved. Verified on 1 bar(s): windowsRICE Blue Accent · Segoe UI Variable 13."
+    },
+    {
+        "check":  "Apply verified against the running bar",
+        "pass":  true,
+        "detail":  "Applied and saved. Verified on 1 bar(s): windowsRICE Blue Accent · Segoe UI Variable 13."
+    },
+    {
+        "check":  "palette card selected",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "Ocean Blue background on the real bar (#0E2A3F)",
+        "pass":  true,
+        "detail":  "bar #0E2A3F"
+    },
+    {
+        "check":  "palette accent reaches the menu mark",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "font card shows the family name",
+        "pass":  true,
+        "detail":  "Cascadia Code. Latin only · 6 weights"
+    },
+    {
+        "check":  "font card selected",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "font change redraws the bar text",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "status names the font the bar now uses",
+        "pass":  true,
+        "detail":  "Applied and saved. Verified on 1 bar(s): windowsRICE Blue Accent · Cascadia Code 13."
+    },
+    {
+        "check":  "translucent background shows the backdrop through the real bar",
+        "pass":  true,
+        "detail":  "solid #0E2A3F -\u003e translucent #0B2232"
+    },
+    {
+        "check":  "module appearance changes the right side of the real bar",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "layout moves the clock in the real bar (UI Automation)",
+        "pass":  true,
+        "detail":  "region.center -\u003e region.right"
+    },
+    {
+        "check":  "effect card shows on",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "accent line drawn along the bottom of the real bar",
+        "pass":  true,
+        "detail":  "bottom pixel #4FB3FF"
+    },
+    {
+        "check":  "colourful icons change the real bar",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "CPU module drawn in its own accent on the real bar",
+        "pass":  true,
+        "detail":  "teal pixels in CPU module: 238"
+    },
+    {
+        "check":  "other modules keep the bar style",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "CPU module shows its label (Everything)",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "complete design saved as a preset",
+        "pass":  true,
+        "detail":  "<project>\\target\\phase8\\e2e\\presets\\e2e-complete-look.toml"
+    },
+    {
+        "check":  "after restart the bar shows the saved design",
+        "pass":  true,
+        "detail":  "bottom #4FB3FF"
+    },
+    {
+        "check":  "after restart the clock is still on the right",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "after restart the CPU module keeps its own accent",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "animation switch saved",
+        "pass":  true,
+        "detail":  "Applied and saved. Verified on 1 bar(s): windowsRICE Blue Accent · Cascadia Code 13."
+    },
+    {
+        "check":  "reopened Studio marks the palette",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "reopened Studio marks the effect",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "config unchanged by restart",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "run1.json clean: no errors, no accessibility problems",
+        "pass":  true,
+        "detail":  "errors="
+    },
+    {
+        "check":  "run2.json clean: no errors, no accessibility problems",
+        "pass":  true,
+        "detail":  "errors="
+    },
+    {
+        "check":  "Apply fades the new design in when animations are on",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "no fade after animations were turned off",
+        "pass":  true,
+        "detail":  "verified@5 fade@-1"
+    }
+]

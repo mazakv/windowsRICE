@@ -1,0 +1,141 @@
+{
+  "version": "0.1.0",
+  "args": [
+    "--no-hotkey",
+    "--lang",
+    "en",
+    "--title",
+    "Documents - File Explorer",
+    "--exit-after",
+    "2.5",
+    "--stats",
+    "<project>\\docs\\benchmarks\\2026-11-19-panel\\startup-2.json"
+  ],
+  "render": {
+    "adapter": "AMD Radeon RX 9070 XT",
+    "dpi": 144,
+    "feature_level": "0xB000",
+    "init_ms": 59.506499999999996,
+    "recoveries": 0,
+    "swapchain": [
+      3816,
+      51
+    ],
+    "warp": false
+  },
+  "text": {
+    "fallback": [
+      "Malgun Gothic"
+    ],
+    "family": "Segoe UI Variable",
+    "hangul_resolves_to": "Malgun Gothic",
+    "icon_family": "Segoe Fluent Icons",
+    "latin_resolves_to": "Segoe UI Variable",
+    "missing_families": [],
+    "weights": [
+      400,
+      500
+    ]
+  },
+  "monitor": {
+    "device": "\\\\.\\DISPLAY1",
+    "monitor_dpi": 144,
+    "monitor_rect": [
+      0,
+      0,
+      3840,
+      2160
+    ],
+    "scale_forced": false,
+    "scale_used": 1.5,
+    "surface_dips": [
+      2544.0,
+      34.0
+    ],
+    "window_rect": [
+      12,
+      12,
+      3828,
+      63
+    ],
+    "work_rect": [
+      0,
+      0,
+      3840,
+      2160
+    ]
+  },
+  "theme": {
+    "fallback": false,
+    "id": "windowsrice-default",
+    "mode": "Dark",
+    "name": "windowsRICE Default",
+    "notices": [
+      "ConfigMissing"
+    ],
+    "sink_accepted": 1
+  },
+  "surface": {
+    "backdrop": "Acrylic",
+    "backplates": false,
+    "fade_ms": 120,
+    "high_contrast": false,
+    "meets_aa_worst_case": true,
+    "min_opacity_for_aa": 0.800000011920929,
+    "reason": "Translucent",
+    "surface_opacity": 0.8799999952316284,
+    "worst_case_text_contrast": 5.986248712028676,
+    "worst_case_without_backplates": 5.986248712028676
+  },
+  "warnings": [],
+  "ms_process_to_window": 101.9859,
+  "ms_process_to_first_frame": 100.9857,
+  "frames": [
+    0.0779206
+  ],
+  "frame_reasons": [
+    "foreground"
+  ],
+  "frame_draw_ms": [
+    2.9784
+  ],
+  "frame_present_ms": [
+    1.8974
+  ],
+  "input_latency_ms": [],
+  "uia_provider_calls": 9,
+  "uia_events_raised": 3,
+  "uia_focus_events": 0,
+  "a11y_problems": [],
+  "menu_opens": 0,
+  "hotkey_registered": false,
+  "focus_log": [],
+  "suspend_log": [],
+  "frames_while_hidden": 0,
+  "samples": 0,
+  "samples_while_hidden": 0,
+  "sample_cost_ms": [],
+  "device_recoveries": 0,
+  "recovery_failures": 0,
+  "resources_start": {
+    "handles": 136,
+    "gdi_objects": 0,
+    "user_objects": 4,
+    "private_bytes": 2199552,
+    "working_set": 11841536
+  },
+  "resources_end": {
+    "handles": 1176,
+    "gdi_objects": 0,
+    "user_objects": 10,
+    "private_bytes": 46641152,
+    "working_set": 53387264
+  },
+  "resources_after_recovery": [],
+  "dpi_events": [],
+  "display_events": [
+    "0.07s initial: 3816x51 at 12x12 dpi 144 (monitor \\\\.\\DISPLAY1 dpi 144)"
+  ],
+  "errors": [],
+  "exit_reason": "exit-after"
+}

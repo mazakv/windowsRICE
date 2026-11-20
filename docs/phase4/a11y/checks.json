@@ -1,0 +1,172 @@
+﻿[
+    {
+        "check":  "root is a ToolBar",
+        "pass":  true,
+        "detail":  "ControlType.ToolBar"
+    },
+    {
+        "check":  "root name",
+        "pass":  true,
+        "detail":  "windowsRICE panel"
+    },
+    {
+        "check":  "element count (3 groups + 2 + 1 + 6)",
+        "pass":  true,
+        "detail":  "12"
+    },
+    {
+        "check":  "framework id",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "every element named",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "three named groups",
+        "pass":  true,
+        "detail":  "Application | Clock | System status"
+    },
+    {
+        "check":  "menu is a focusable Button",
+        "pass":  true,
+        "detail":  "windowsRICE menu"
+    },
+    {
+        "check":  "menu supports Invoke and ExpandCollapse (collapsed)",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "menu has help text",
+        "pass":  true,
+        "detail":  "Opens the windowsRICE menu. Press Enter, Space or Down Arrow."
+    },
+    {
+        "check":  "active-window is a Text element",
+        "pass":  true,
+        "detail":  "Active window: Documents - File Explorer"
+    },
+    {
+        "check":  "clock is a Text element",
+        "pass":  true,
+        "detail":  "Clock: 09:20, Thursday, November 19, 2026"
+    },
+    {
+        "check":  "status.network is a Text element",
+        "pass":  true,
+        "detail":  "Network: connected to the internet, wired"
+    },
+    {
+        "check":  "status.volume is a Text element",
+        "pass":  true,
+        "detail":  "Volume 98%"
+    },
+    {
+        "check":  "status.cpu is a Text element",
+        "pass":  true,
+        "detail":  "CPU usage 19%"
+    },
+    {
+        "check":  "status.gpu is a Text element",
+        "pass":  true,
+        "detail":  "GPU usage 74%"
+    },
+    {
+        "check":  "status.memory is a Text element",
+        "pass":  true,
+        "detail":  "Memory: 21.3 GB of 31.9 GB used (67%)"
+    },
+    {
+        "check":  "status.windowsrice is a Text element",
+        "pass":  true,
+        "detail":  "windowsRICE status: normal"
+    },
+    {
+        "check":  "active window name",
+        "pass":  true,
+        "detail":  "Active window: Documents - File Explorer"
+    },
+    {
+        "check":  "all bounds inside the window",
+        "pass":  true,
+        "detail":  "window 12,12,3816,51"
+    },
+    {
+        "check":  "hit testing returns the menu button",
+        "pass":  true,
+        "detail":  "menu"
+    },
+    {
+        "check":  "(info) system foreground obtainable from a background script",
+        "pass":  true,
+        "detail":  "SetForegroundWindow=False; Windows foreground lock applies"
+    },
+    {
+        "check":  "UIA SetFocus moves keyboard focus (CPU), provider view",
+        "pass":  true,
+        "detail":  "status.cpu"
+    },
+    {
+        "check":  "HasKeyboardFocus reported",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "keyboard navigation sequence",
+        "pass":  true,
+        "detail":  "status.gpu,status.memory,status.gpu,menu,status.windowsrice,menu"
+    },
+    {
+        "check":  "UIA focus-changed events received",
+        "pass":  true,
+        "detail":  "8: menu,status.cpu,status.gpu,status.memory,status.gpu,menu,status.windowsrice,menu"
+    },
+    {
+        "check":  "Name property-changed events received",
+        "pass":  true,
+        "detail":  "6: status.cpu: CPU usage 16% | status.gpu: GPU usage 73% | status.cpu: CPU usage 12%"
+    },
+    {
+        "check":  "native popup menu exposed to UIA",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "(info) native menu items reachable without foreground",
+        "pass":  true,
+        "detail":  "0 items: "
+    },
+    {
+        "check":  "menu button reports Expanded while open",
+        "pass":  true,
+        "detail":  "Expanded"
+    },
+    {
+        "check":  "menu button reports Collapsed after the menu closed",
+        "pass":  true,
+        "detail":  "Collapsed"
+    },
+    {
+        "check":  "panel closed cleanly and wrote diagnostics",
+        "pass":  true,
+        "detail":  "WM_CLOSE code=0"
+    },
+    {
+        "check":  "provider tree lint clean",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "unavailable GPU reading is disabled",
+        "pass":  true,
+        "detail":  "enabled=False focusable=False"
+    },
+    {
+        "check":  "unavailable GPU reading is named",
+        "pass":  true,
+        "detail":  "GPU usage unavailable"
+    }
+]

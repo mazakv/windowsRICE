@@ -1,0 +1,28 @@
+[package]
+name = "slint-bar"
+description = "UI spike candidate A: Slint (winit backend, FemtoVG OpenGL renderer) top bar (EXPERIMENTAL)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+# Slint is used here under GPL-3.0-only for internal evaluation only; this
+# prototype is not distributed. See the ADR for the licensing analysis.
+
+[dependencies]
+spike-common.workspace = true
+windows.workspace = true
+raw-window-handle = "0.6.2"
+
+[dependencies.slint]
+version = "=1.19.0"
+default-features = false
+features = [
+    "std",
+    "compat-1-2",
+    "backend-winit",
+    "renderer-femtovg",
+    "renderer-software",
+    "accessibility",
+    "raw-window-handle-06",
+    "unstable-winit-030",
+]

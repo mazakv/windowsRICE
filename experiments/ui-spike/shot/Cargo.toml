@@ -1,0 +1,11 @@
+[package]
+name = "shot"
+description = "UI spike helper: DPI-aware screen-region capture to PNG (EXPERIMENTAL)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+windows.workspace = true
+png = "0.18.1"

@@ -1,0 +1,257 @@
+﻿[
+    {
+        "check":  "Design Studio window opens (--studio)",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "Studio root is a Window named \"windowsRICE Design Studio\"",
+        "pass":  true,
+        "detail":  "windowsRICE Design Studio"
+    },
+    {
+        "check":  "twelve navigation items",
+        "pass":  true,
+        "detail":  "Home, Design styles, Themes, Colours, Background, Typography, Icons, Modules, Layout, Effects, Presets, Advanced"
+    },
+    {
+        "check":  "preview summary names the shown modules",
+        "pass":  true,
+        "detail":  "Preview shows 12 modules: windowsRICE menu, Active window, Clock and date, Download speed, Upload speed, Network status, Volume, CPU usage, GPU usage, Video memory, Memory, Notifications"
+    },
+    {
+        "check":  "every Studio element is named",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "section home opens",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "section styles opens",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "section themes opens",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "section colors opens",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "section background opens",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "section typography opens",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "section icons opens",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "section modules opens",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "section layout opens",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "section effects opens",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "section presets opens",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "section advanced opens",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "background swatch changes the draft (Apply enabled)",
+        "pass":  true,
+        "detail":  "Changes not applied yet"
+    },
+    {
+        "check":  "typed accent colour accepted (Value pattern)",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "invalid colour explained",
+        "pass":  true,
+        "detail":  "Colours are written as #RRGGBB, for example #1B1D22."
+    },
+    {
+        "check":  "unreadable text colour blocks Apply with an explanation",
+        "pass":  true,
+        "detail":  "Contrast of text on background is 1.0:1, below the 4.5:1 minimum. Choose a darker background or a lighter text colour (or the reverse)."
+    },
+    {
+        "check":  "undo removes the unreadable colour",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "redo and undo again",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "Apply saves to config.toml",
+        "pass":  true,
+        "detail":  "background = \"#121826\" accent = \"#E3A33B\" border_bottom = true"
+    },
+    {
+        "check":  "status reports the bar was verified",
+        "pass":  true,
+        "detail":  "Applied and saved. Verified on 1 bar(s): windowsRICE Default · Segoe UI Variable 13."
+    },
+    {
+        "check":  "the real bar shows the applied background",
+        "pass":  true,
+        "detail":  "#121826"
+    },
+    {
+        "check":  "drag and drop moves CPU into the left section",
+        "pass":  true,
+        "detail":  "CPU usage, Left section, position 3 of 3, shown"
+    },
+    {
+        "check":  "keyboard alternative: Earlier moves the selected card",
+        "pass":  true,
+        "detail":  "CPU usage, Left section, position 2 of 3, shown"
+    },
+    {
+        "check":  "keyboard alternative: region choice moves it to the right",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "add a custom text module",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "remove the module again",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "duplicate writes a custom theme file",
+        "pass":  true,
+        "detail":  "custom-windowsrice-default-1.toml"
+    },
+    {
+        "check":  "edited theme saved and validated",
+        "pass":  true,
+        "detail":  "Theme saved. Bars using it were updated."
+    },
+    {
+        "check":  "delete asks first and removes the theme file",
+        "pass":  true,
+        "detail":  "Theme deleted."
+    },
+    {
+        "check":  "save current design as a preset",
+        "pass":  true,
+        "detail":  "Saved preset \"Evening Test\"."
+    },
+    {
+        "check":  "load preset into the draft",
+        "pass":  true,
+        "detail":  "Loaded \"Evening Test\" into the draft. Apply to use it."
+    },
+    {
+        "check":  "export through the Save dialog",
+        "pass":  true,
+        "detail":  "dialog=True status="
+    },
+    {
+        "check":  "malformed preset rejected with a reason",
+        "pass":  true,
+        "detail":  "Not imported: not a windowsRICE preset: unexpected key or value, expected newline, `#`"
+    },
+    {
+        "check":  "valid preset imported into the presets folder",
+        "pass":  true,
+        "detail":  "Imported \"Imported One\". Select it and choose Load to preview it."
+    },
+    {
+        "check":  "Right arrow moves to the next style card",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "Down arrow moves one row down the grid",
+        "pass":  true,
+        "detail":  "card:style:3"
+    },
+    {
+        "check":  "Space chooses the focused card",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "Right arrow raises a slider by one step",
+        "pass":  true,
+        "detail":  "34 -\u003e 35"
+    },
+    {
+        "check":  "text field: typing, Home, End, Left and Delete edit at the caret",
+        "pass":  true,
+        "detail":  "XA"
+    },
+    {
+        "check":  "reset asks first and resets the draft",
+        "pass":  true,
+        "detail":  "Everything was reset to the defaults in the draft. Apply to use it."
+    },
+    {
+        "check":  "closing with unapplied changes asks; Cancel keeps the Studio open",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "No discards and closes; the bar keeps running",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "Studio remembers its section and window",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "reset was not applied (config keeps the applied design)",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "a second --studio launch opens the Studio in the running bar",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "clean exit, no errors, no accessibility lint problems",
+        "pass":  true,
+        "detail":  "errors= a11y="
+    }
+]

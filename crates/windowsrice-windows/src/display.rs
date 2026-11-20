@@ -131,6 +131,7 @@ pub fn rotation_degrees(rotation: i32) -> Option<u32> {
 #[derive(Debug, Default)]
 struct PathDetails {
     friendly_name: Option<String>,
+    device_path: Option<String>,
     native_resolution: Option<Resolution>,
     preferred_mode_refresh_hz: Option<f64>,
     current_refresh_hz: Option<f64>,
@@ -183,10 +184,14 @@ fn query_paths() -> Result<Vec<(String, PathDetails)>, WinError> {
             ..Default::default()
         };
         // SAFETY: as above.
-        let friendly_name = (unsafe { DisplayConfigGetDeviceInfo(&raw mut target.header) }
-            == ERROR_SUCCESS.0.cast_signed())
-        .then(|| from_wide_nonempty(&target.monitorFriendlyDeviceName))
-        .flatten();
+        let target_ok = unsafe { DisplayConfigGetDeviceInfo(&raw mut target.header) }
+            == ERROR_SUCCESS.0.cast_signed();
+        let friendly_name = target_ok
+            .then(|| from_wide_nonempty(&target.monitorFriendlyDeviceName))
+            .flatten();
+        let device_path = target_ok
+            .then(|| from_wide_nonempty(&target.monitorDevicePath))
+            .flatten();
 
         let mut preferred = DISPLAYCONFIG_TARGET_PREFERRED_MODE {
             header: header::<DISPLAYCONFIG_TARGET_PREFERRED_MODE>(
@@ -218,6 +223,7 @@ fn query_paths() -> Result<Vec<(String, PathDetails)>, WinError> {
             gdi_name,
             PathDetails {
                 friendly_name,
+                device_path,
                 native_resolution,
                 preferred_mode_refresh_hz,
                 current_refresh_hz: rational_hz(
@@ -229,6 +235,52 @@ fn query_paths() -> Result<Vec<(String, PathDetails)>, WinError> {
         ));
     }
     Ok(out)
+}
+
+/// (GDI device name, monitor device path, friendly name).
+pub type MonitorIdentity = (String, Option<String>, Option<String>);
+
+/// Stable identity of each active monitor: (GDI device name, monitor
+/// device path, friendly name). The device path (from the monitor's EDID
+/// hardware id and its connector instance) survives the renumbering of GDI
+/// names such as \\.\DISPLAY2 when the display topology changes.
+pub fn monitor_identities() -> Result<Vec<MonitorIdentity>, WinError> {
+    Ok(query_paths()?
+        .into_iter()
+        .map(|(gdi, d)| {
+            // DisplayConfig leaves the path empty when the monitor gives no
+            // identification (observed with a sleeping DisplayPort monitor);
+            // `EnumDisplayDevices` is the documented second source. When
+            // both are empty the identity is unknown (`None`).
+            let path = d.device_path.or_else(|| interface_path(&gdi));
+            (gdi, path, d.friendly_name)
+        })
+        .collect())
+}
+
+/// Monitor device interface path of the first monitor on a GDI display
+/// (`EnumDisplayDevicesW` with `EDD_GET_DEVICE_INTERFACE_NAME`), if any.
+pub fn interface_path(gdi: &str) -> Option<String> {
+    use windows::Win32::Graphics::Gdi::{DISPLAY_DEVICEW, EnumDisplayDevicesW};
+    const EDD_GET_DEVICE_INTERFACE_NAME: u32 = 1;
+    let name = windows::core::HSTRING::from(gdi);
+    let mut dd = DISPLAY_DEVICEW {
+        cb: size_of::<DISPLAY_DEVICEW>() as u32,
+        ..Default::default()
+    };
+    // SAFETY: read-only query into a correctly sized structure.
+    let ok = unsafe { EnumDisplayDevicesW(&name, 0, &raw mut dd, EDD_GET_DEVICE_INTERFACE_NAME) }
+        .as_bool();
+    if !ok {
+        return None;
+    }
+    let n = dd
+        .DeviceID
+        .iter()
+        .position(|&c| c == 0)
+        .unwrap_or(dd.DeviceID.len());
+    let id = String::from_utf16_lossy(&dd.DeviceID[..n]);
+    id.starts_with(r"\\?\").then_some(id)
 }
 
 fn query_display_config()

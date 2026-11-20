@@ -1,0 +1,38 @@
+windowsRICE - installation
+==========================
+
+Requirements: Windows 11 (64-bit). No administrator rights are needed.
+
+Check the download (optional)
+  Compare the SHA-256 in windowsRICE-<version>-win-x64.zip.sha256 with:
+    powershell -Command "(Get-FileHash windowsRICE-<version>-win-x64.zip).Hash"
+
+Install
+  1. Extract the zip to any folder.
+  2. Right-click install.ps1 > Run with PowerShell, or run:
+       powershell -ExecutionPolicy Bypass -File install.ps1
+     Options:
+       -StartWithWindows    also start windowsRICE when you sign in
+       -NoStartWithWindows  stop starting it at sign-in
+       -Launch              start windowsRICE after installing
+
+  Files go to %LOCALAPPDATA%\Programs\windowsRICE. The Start menu gets
+  "windowsRICE" and "windowsRICE Design Studio", and Settings > Apps lists
+  windowsRICE so it can be removed there.
+
+Upgrade
+  Run install.ps1 from the newer version. A running windowsRICE is closed
+  first. Your settings, custom themes and presets are kept, and so is your
+  choice about starting with Windows. If an install is interrupted, running
+  the installer again restores or completes it.
+
+Uninstall
+  Settings > Apps > windowsRICE > Uninstall, or run:
+    powershell -ExecutionPolicy Bypass -File "%LOCALAPPDATA%\Programs\windowsRICE\uninstall.ps1"
+  Your settings stay in %APPDATA%\windowsRICE. To remove them too, add
+  -RemoveSettings; you are asked to type YES (or add -Yes). Files of your
+  own in the install folder are not deleted.
+
+Notes
+  This build is not code-signed, so Windows SmartScreen may warn the first
+  time you run it. windowsRICE works offline and sends no data anywhere.

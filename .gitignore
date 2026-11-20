@@ -13,3 +13,7 @@ target/
 # Diagnostic exports (may contain machine-specific details)
 /diagnostics-export/
 *.diag.json
+
+# UI spike: project-local Cargo home (downloaded crates) and temp files
+/experiments/ui-spike/.cargo-home/
+/experiments/ui-spike/tmp/

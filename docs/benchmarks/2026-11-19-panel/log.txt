@@ -1,0 +1,7 @@
+[14:56:03] startup done
+[14:56:26] input done: 20 samples
+[14:59:34] idle-default-rep1 done cpu=0.3351% priv=45.1
+[15:02:42] idle-no-gpu-counter-rep1 done cpu=0.1945% priv=38.5
+[15:05:50] idle-uia-client-rep1 done cpu=0.2464% priv=45.2
+[15:08:58] idle-default-rep2 done cpu=0.1556% priv=45
+[15:12:06] idle-no-gpu-counter-rep2 done cpu=0.1167% priv=38.7

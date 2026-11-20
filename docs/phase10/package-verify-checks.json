@@ -1,0 +1,142 @@
+﻿[
+    {
+        "check":  "package zip for the workspace version exists",
+        "pass":  true,
+        "detail":  "windowsRICE-0.1.0-rc.1-win-x64.zip"
+    },
+    {
+        "check":  "checksum file names the zip and matches it",
+        "pass":  true,
+        "detail":  "9DF935DFF2B51803AD340913B50867CD88BE5A8BBCBDF4E9FA11161E4D67C8B9  windowsRICE-0.1.0-rc.1-win-x64.zip"
+    },
+    {
+        "check":  "zip holds exactly the release files (no captures, configs or development files)",
+        "pass":  true,
+        "detail":  "install.ps1, INSTALL.txt, uninstall.ps1, windowsrice.ico, windowsrice-panel.exe"
+    },
+    {
+        "check":  "executable version information",
+        "pass":  true,
+        "detail":  "windowsRICE 0.1.0-rc.1 \u0027windowsRICE Bar\u0027"
+    },
+    {
+        "check":  "executable has the application icon",
+        "pass":  true,
+        "detail":  "icons: 1"
+    },
+    {
+        "check":  "icon file matches assets\\windowsrice.ico",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "no user name, local paths or secrets in any shipped file",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "shipped executable is the package build",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "fresh install from the extracted zip",
+        "pass":  true,
+        "detail":  "windowsRICE 0.1.0-rc.1 installed in <project>\\target\\pkgtest\\Programs\\windowsRICE"
+    },
+    {
+        "check":  "Start menu shortcuts point to the installed exe",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "no Startup shortcut unless asked",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "Apps \u0026 features values (planned)",
+        "pass":  true,
+        "detail":  "windowsRICE 0.1.0-rc.1"
+    },
+    {
+        "check":  "upgrade closes the running bar cleanly (--quit)",
+        "pass":  true,
+        "detail":  "exit_reason=--quit"
+    },
+    {
+        "check":  "startup opt-in creates the Startup shortcut",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "upgrade keeps settings and the user\u0027s own files",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "upgrade keeps the start-with-Windows choice",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "startup opt-out removes the Startup shortcut",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "interrupted install is restored and completed",
+        "pass":  true,
+        "detail":  "Restored the previous installation after an interrupted install.\r\nwindowsRICE 0.1.0-rc.1 installed in <project>\\target\\pkgtest\\Programs\\windowsRICE"
+    },
+    {
+        "check":  "refuses to install into an unrelated non-empty folder",
+        "pass":  true,
+        "detail":  "<project>\\target\\pkgtest\\Foreign is not a windowsRICE installation and is not empty; nothing \r"
+    },
+    {
+        "check":  "refuses a profile root as install folder",
+        "pass":  true,
+        "detail":  "Refusing to install directly into %USERPROFILE%\\AppData\\Local; choose a windowsRICE folder.\r"
+    },
+    {
+        "check":  "removing settings without confirmation is refused (nothing changed)",
+        "pass":  true,
+        "detail":  "Removing settings needs confirmation: run interactively or add -Yes. Nothing was changed.\r"
+    },
+    {
+        "check":  "refuses to remove a folder that is not windowsRICE settings",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "uninstall removes windowsRICE files and its shortcuts",
+        "pass":  true,
+        "detail":  "Kept <project>\\target\\pkgtest\\Programs\\windowsRICE: it contains files that are not part of windowsRICE.\r\nwindowsRICE removed. Your settings are kept in <project>\\target\\pkgtest\\AppData\\windowsRICE"
+    },
+    {
+        "check":  "uninstall keeps settings by default",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "uninstall keeps the user\u0027s own files (and their folder)",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "three install and uninstall cycles leave no install and keep settings",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "confirmed -RemoveSettings removes only the settings folder",
+        "pass":  true,
+        "detail":  "windowsRICE removed, including settings in <project>\\target\\pkgtest\\AppData\\windowsRICE"
+    },
+    {
+        "check":  "nothing left running",
+        "pass":  true,
+        "detail":  ""
+    }
+]

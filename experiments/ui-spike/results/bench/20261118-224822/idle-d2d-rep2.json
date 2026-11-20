@@ -1,0 +1,36 @@
+{
+  "backdrop": "Acrylic",
+  "candidate": "d2d",
+  "first_frame_ms_since_process_creation": 179.03515625,
+  "frame_times_s": [
+    0.1250258,
+    51.5562397,
+    111.5428583,
+    171.5653839,
+    231.5663688,
+    291.5698175,
+    351.5425288,
+    411.5739845,
+    471.5671605,
+    531.5624513,
+    591.5670291,
+    651.5734044,
+    711.5663006,
+    771.5603869,
+    831.5603553,
+    891.5632427
+  ],
+  "frames_total": 16,
+  "interactions": [],
+  "renderer": "Direct2D 1.1 + DirectWrite + DirectComposition (D3D11 hardware)",
+  "run_seconds": 905.1354357,
+  "scale": 1.5,
+  "window_log": [
+    "topmost+toolwindow: true",
+    "dark mode: true",
+    "round corners: true",
+    "extend frame: true",
+    "system backdrop DWM_SYSTEMBACKDROP_TYPE(3): true",
+    "WM_KILLFOCUS at 905.13s"
+  ]
+}

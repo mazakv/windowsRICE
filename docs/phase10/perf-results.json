@@ -1,0 +1,69 @@
+﻿{
+    "machine":  "AMD Ryzen 9 5900X 12-Core Processor, 24 logical CPUs",
+    "startup":  [
+                    {
+                        "to_window_ms":  261.0533,
+                        "to_first_frame_ms":  261.0533
+                    },
+                    {
+                        "to_window_ms":  296.2064,
+                        "to_first_frame_ms":  296.2064
+                    },
+                    {
+                        "to_window_ms":  269.5291,
+                        "to_first_frame_ms":  270.0899
+                    }
+                ],
+    "startup_first_frame_ms_median":  270.0899,
+    "idle":  {
+                 "cpu_percent_of_one_core":  0.521,
+                 "cpu_percent_of_machine":  0.0217,
+                 "redraws_per_minute":  62,
+                 "frame_draw_ms_median":  0.7801,
+                 "frame_present_ms_median":  0.23809999999999998,
+                 "memory":  {
+                                "private_mib":  46.8,
+                                "working_set_mib":  57.8,
+                                "gpu_dedicated_mib":  21.1,
+                                "handles":  1246
+                            }
+             },
+    "studio":  {
+                   "before":  {
+                                  "private_mib":  46.8,
+                                  "working_set_mib":  57.5,
+                                  "gpu_dedicated_mib":  20.9,
+                                  "handles":  1253
+                              },
+                   "open":  {
+                                "private_mib":  83.4,
+                                "working_set_mib":  75.9,
+                                "gpu_dedicated_mib":  59.7,
+                                "handles":  2181
+                            },
+                   "after_scrolling_fonts":  {
+                                                 "private_mib":  88.2,
+                                                 "working_set_mib":  84.8,
+                                                 "gpu_dedicated_mib":  61.7,
+                                                 "handles":  2255
+                                             },
+                   "after_close":  {
+                                       "private_mib":  70.7,
+                                       "working_set_mib":  71.5,
+                                       "gpu_dedicated_mib":  20.6,
+                                       "handles":  1308
+                                   },
+                   "after_second_close":  {
+                                              "private_mib":  72.4,
+                                              "working_set_mib":  72.8,
+                                              "gpu_dedicated_mib":  20.6,
+                                              "handles":  1307
+                                          },
+                   "scene_builds":  359,
+                   "build_ms_median":  1.91,
+                   "build_ms_max":  7.3,
+                   "font_discovery":  "9.08s studio fonts: 188 families (cache) in 0 ms; 30.60s studio fonts: 188 families (cache) in 0 ms",
+                   "errors":  0,
+                   "exit_reason":  "Alt+F4"
+               }
+}

@@ -9,6 +9,9 @@
 //! - **v1** (Phase 1): `general.active_theme` held a theme *display name*.
 //! - **v2** (Phase 3): theme selection moved to `[theme]`, which stores a
 //!   stable theme *id* (`theme.active`) and a mode preference (`theme.mode`).
+//! - **v3** (Phase 5): `[bar]` configures the windowsRICE Bar (modules,
+//!   height, work-area reservation, auto-hide, monitors, popup). v2 files
+//!   gain the default `[bar]` section; nothing else changes.
 //!
 //! Older files are migrated in memory when loaded ([`LoadOutcome::Migrated`]).
 //! The file on disk is not rewritten until the application saves, and the
@@ -19,12 +22,13 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
+use crate::bar::BarConfig;
 use crate::hotkey::Hotkey;
 use crate::logging::LogLevel;
 use crate::{CoreError, Result};
 
 /// Current configuration schema version.
-pub const CONFIG_SCHEMA_VERSION: u32 = 2;
+pub const CONFIG_SCHEMA_VERSION: u32 = 3;
 
 /// Theme id selected on first run and used as the fallback.
 pub const DEFAULT_THEME_ID: &str = "windowsrice-default";
@@ -42,6 +46,7 @@ pub struct Config {
     pub typography: TypographyConfig,
     pub launcher: LauncherConfig,
     pub logging: LoggingConfig,
+    pub bar: BarConfig,
 }
 
 impl Default for Config {
@@ -53,6 +58,7 @@ impl Default for Config {
             typography: TypographyConfig::default(),
             launcher: LauncherConfig::default(),
             logging: LoggingConfig::default(),
+            bar: BarConfig::default(),
         }
     }
 }
@@ -264,6 +270,20 @@ fn migrate_v1_to_v2(table: &mut toml::Table, origin: &Path, notes: &mut Vec<Stri
     Ok(())
 }
 
+/// v2 → v3: adds the `[bar]` section with its defaults. A v2 file has no
+/// `[bar]`; if one is present the file is not a genuine v2 file.
+fn migrate_v2_to_v3(table: &mut toml::Table, origin: &Path, notes: &mut Vec<String>) -> Result<()> {
+    if table.contains_key("bar") {
+        return Err(parse_error(
+            origin,
+            "schema v2 file contains a [bar] section, which v2 does not define",
+        ));
+    }
+    notes.push("added the [bar] section with default settings (schema v3)".into());
+    table.insert("schema_version".into(), toml::Value::Integer(3));
+    Ok(())
+}
+
 impl Config {
     pub fn validate(&self) -> Result<()> {
         let invalid = |m: String| Err(CoreError::ConfigInvalid(m));
@@ -313,6 +333,10 @@ impl Config {
         if !(1..=100).contains(&self.logging.max_log_files) {
             return invalid("logging.max_log_files must be 1-100".into());
         }
+        let bar = self.bar.problems();
+        if !bar.is_empty() {
+            return invalid(bar.join("; "));
+        }
         Ok(())
     }
 
@@ -334,7 +358,11 @@ impl Config {
                     "schema_version must be at least 1".into(),
                 ));
             }
-            1 => migrate_v1_to_v2(&mut table, origin, &mut notes)?,
+            1 => {
+                migrate_v1_to_v2(&mut table, origin, &mut notes)?;
+                migrate_v2_to_v3(&mut table, origin, &mut notes)?;
+            }
+            2 => migrate_v2_to_v3(&mut table, origin, &mut notes)?,
             CONFIG_SCHEMA_VERSION => {}
             newer => {
                 return Err(CoreError::ConfigInvalid(format!(
@@ -436,7 +464,7 @@ mod tests {
     fn defaults_match_design_rules() {
         let c = Config::default();
         c.validate().unwrap();
-        assert_eq!(c.schema_version, 2);
+        assert_eq!(c.schema_version, CONFIG_SCHEMA_VERSION);
         assert_eq!(c.typography.font_family, "Segoe UI Variable");
         assert_eq!(c.typography.fallback_fonts, ["Malgun Gothic"]);
         assert_eq!(
@@ -555,7 +583,8 @@ mod tests {
             m.notes[0].contains("windowsRICE macOS Inspired")
                 && m.notes[0].contains("windowsrice-macos-inspired")
         );
-        assert_eq!(c.schema_version, 2);
+        // v1 files are migrated through v2 to the current schema.
+        assert_eq!(c.schema_version, CONFIG_SCHEMA_VERSION);
         assert_eq!(c.theme.active, "windowsrice-macos-inspired");
         // Every other v1 value is preserved.
         assert_eq!(c.general.language, Language::Korean);

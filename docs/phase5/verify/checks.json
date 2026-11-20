@@ -1,0 +1,77 @@
+﻿[
+    {
+        "check":  "hide/resume: no frames while hidden, frames after",
+        "pass":  true,
+        "detail":  "hidden=0 after=3 log=3.15s \\\\.\\DISPLAY1 hidden (suspend test) | 8.16s \\\\.\\DISPLAY1 shown (suspend test)"
+    },
+    {
+        "check":  "Alt+F4 (posted): bar closes cleanly and releases the work area",
+        "pass":  true,
+        "detail":  "exited=True reason=Alt+F4 work top while running=51 after=0"
+    },
+    {
+        "check":  "overflow on the real monitor: modules hidden and named, tree lint clean",
+        "pass":  true,
+        "detail":  "hidden=note-14,note-13,note-12,note-11,note-10,note-9"
+    },
+    {
+        "check":  "contrast dark over black",
+        "pass":  true,
+        "detail":  "chip 13.01:1 (#222329), surface 13.01:1, backplates=False"
+    },
+    {
+        "check":  "contrast light over black",
+        "pass":  true,
+        "detail":  "chip 14.26:1 (#F0F1F3), surface 14.26:1, backplates=False"
+    },
+    {
+        "check":  "contrast glass-dark over black",
+        "pass":  true,
+        "detail":  "chip 10.88:1 (#34363A), surface 10.88:1, backplates=True"
+    },
+    {
+        "check":  "contrast glass-light over black",
+        "pass":  true,
+        "detail":  "chip 13.84:1 (#E4E5E7), surface 13.84:1, backplates=True"
+    },
+    {
+        "check":  "contrast dark over white",
+        "pass":  true,
+        "detail":  "chip 13.01:1 (#222329), surface 13.01:1, backplates=False"
+    },
+    {
+        "check":  "contrast light over white",
+        "pass":  true,
+        "detail":  "chip 14.26:1 (#F0F1F3), surface 14.26:1, backplates=False"
+    },
+    {
+        "check":  "contrast glass-dark over white",
+        "pass":  true,
+        "detail":  "chip 10.88:1 (#34363A), surface 10.88:1, backplates=True"
+    },
+    {
+        "check":  "contrast glass-light over white",
+        "pass":  true,
+        "detail":  "chip 13.84:1 (#E4E5E7), surface 13.84:1, backplates=True"
+    },
+    {
+        "check":  "contrast dark over colour",
+        "pass":  true,
+        "detail":  "chip 13.01:1 (#222329), surface 13.01:1, backplates=False"
+    },
+    {
+        "check":  "contrast light over colour",
+        "pass":  true,
+        "detail":  "chip 14.26:1 (#F0F1F3), surface 14.26:1, backplates=False"
+    },
+    {
+        "check":  "contrast glass-dark over colour",
+        "pass":  true,
+        "detail":  "chip 10.88:1 (#34363A), surface 10.88:1, backplates=True"
+    },
+    {
+        "check":  "contrast glass-light over colour",
+        "pass":  true,
+        "detail":  "chip 13.84:1 (#E4E5E7), surface 13.84:1, backplates=True"
+    }
+]

@@ -567,7 +567,7 @@ dependencies = [
 
 [[package]]
 name = "windowsrice-core"
-version = "0.1.0"
+version = "0.1.0-rc.1"
 dependencies = [
  "serde",
  "tempfile",
@@ -579,7 +579,7 @@ dependencies = [
 
 [[package]]
 name = "windowsrice-diag"
-version = "0.1.0"
+version = "0.1.0-rc.1"
 dependencies = [
  "serde_json",
  "windowsrice-core",
@@ -588,7 +588,7 @@ dependencies = [
 
 [[package]]
 name = "windowsrice-journal"
-version = "0.1.0"
+version = "0.1.0-rc.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -597,8 +597,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "windowsrice-panel"
+version = "0.1.0-rc.1"
+dependencies = [
+ "serde",
+ "serde_json",
+ "toml",
+ "windows",
+ "windows-core",
+ "windowsrice-core",
+ "windowsrice-render",
+ "windowsrice-theme",
+ "windowsrice-ui",
+ "windowsrice-windows",
+]
+
+[[package]]
+name = "windowsrice-render"
+version = "0.1.0-rc.1"
+dependencies = [
+ "thiserror",
+ "windows",
+ "windows-core",
+ "windows-numerics",
+ "windowsrice-theme",
+ "windowsrice-ui",
+]
+
+[[package]]
 name = "windowsrice-theme"
-version = "0.1.0"
+version = "0.1.0-rc.1"
 dependencies = [
  "serde",
  "tempfile",
@@ -608,13 +636,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "windowsrice-ui"
+version = "0.1.0-rc.1"
+dependencies = [
+ "thiserror",
+ "windowsrice-core",
+ "windowsrice-theme",
+]
+
+[[package]]
 name = "windowsrice-windows"
-version = "0.1.0"
+version = "0.1.0-rc.1"
 dependencies = [
  "serde",
  "thiserror",
  "tracing",
  "windows",
+ "windows-core",
  "windowsrice-core",
 ]
 

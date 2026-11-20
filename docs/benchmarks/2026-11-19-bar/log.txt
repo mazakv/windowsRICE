@@ -1,0 +1,12 @@
+[16:00:00] startup done
+[16:00:22] input done: 20 samples
+[16:03:30] idle-default-rep1 done cpu=0.4125% priv=47.7
+[16:06:39] idle-no-gpu-counter-rep1 done cpu=0.3891% priv=41.8
+[16:09:47] idle-uia-client-rep1 done cpu=0.5314% priv=48.6
+[16:12:55] idle-default-rep2 done cpu=0.4928% priv=48.2
+[16:16:03] idle-no-gpu-counter-rep2 done cpu=0.3372% priv=41.7
+[16:19:12] idle-uia-client-rep2 done cpu=0.5055% priv=49.1
+[16:22:20] idle-default-rep3 done cpu=0.376% priv=47.7
+[16:25:28] idle-no-gpu-counter-rep3 done cpu=0.2853% priv=42
+[16:28:37] idle-uia-client-rep3 done cpu=0.4407% priv=48.8
+[16:28:37] results: <project>\docs\benchmarks\2026-11-19-bar

@@ -1,0 +1,134 @@
+﻿[
+    {
+        "theme":  "dark",
+        "backdrop":  "black",
+        "backplates":  false,
+        "opacity":  0.88,
+        "backdrop_px":  "#000000",
+        "chip_px":  "#222329",
+        "chip_contrast":  13.01,
+        "surface_px":  "#222329",
+        "surface_contrast":  13.01
+    },
+    {
+        "theme":  "light",
+        "backdrop":  "black",
+        "backplates":  false,
+        "opacity":  0.88,
+        "backdrop_px":  "#000000",
+        "chip_px":  "#F0F1F3",
+        "chip_contrast":  14.26,
+        "surface_px":  "#F0F1F3",
+        "surface_contrast":  14.26
+    },
+    {
+        "theme":  "glass-dark",
+        "backdrop":  "black",
+        "backplates":  true,
+        "opacity":  0.55,
+        "backdrop_px":  "#000000",
+        "chip_px":  "#34363A",
+        "chip_contrast":  10.88,
+        "surface_px":  "#34363A",
+        "surface_contrast":  10.88
+    },
+    {
+        "theme":  "glass-light",
+        "backdrop":  "black",
+        "backplates":  true,
+        "opacity":  0.55,
+        "backdrop_px":  "#000000",
+        "chip_px":  "#E4E5E7",
+        "chip_contrast":  13.84,
+        "surface_px":  "#E4E5E7",
+        "surface_contrast":  13.84
+    },
+    {
+        "theme":  "dark",
+        "backdrop":  "white",
+        "backplates":  false,
+        "opacity":  0.88,
+        "backdrop_px":  "#FFFFFF",
+        "chip_px":  "#222329",
+        "chip_contrast":  13.01,
+        "surface_px":  "#222329",
+        "surface_contrast":  13.01
+    },
+    {
+        "theme":  "light",
+        "backdrop":  "white",
+        "backplates":  false,
+        "opacity":  0.88,
+        "backdrop_px":  "#FFFFFF",
+        "chip_px":  "#F0F1F3",
+        "chip_contrast":  14.26,
+        "surface_px":  "#F0F1F3",
+        "surface_contrast":  14.26
+    },
+    {
+        "theme":  "glass-dark",
+        "backdrop":  "white",
+        "backplates":  true,
+        "opacity":  0.55,
+        "backdrop_px":  "#FFFFFF",
+        "chip_px":  "#34363A",
+        "chip_contrast":  10.88,
+        "surface_px":  "#34363A",
+        "surface_contrast":  10.88
+    },
+    {
+        "theme":  "glass-light",
+        "backdrop":  "white",
+        "backplates":  true,
+        "opacity":  0.55,
+        "backdrop_px":  "#FFFFFF",
+        "chip_px":  "#E4E5E7",
+        "chip_contrast":  13.84,
+        "surface_px":  "#E4E5E7",
+        "surface_contrast":  13.84
+    },
+    {
+        "theme":  "dark",
+        "backdrop":  "colour",
+        "backplates":  false,
+        "opacity":  0.88,
+        "backdrop_px":  "#FFD009",
+        "chip_px":  "#222329",
+        "chip_contrast":  13.01,
+        "surface_px":  "#222329",
+        "surface_contrast":  13.01
+    },
+    {
+        "theme":  "light",
+        "backdrop":  "colour",
+        "backplates":  false,
+        "opacity":  0.88,
+        "backdrop_px":  "#FFD009",
+        "chip_px":  "#F0F1F3",
+        "chip_contrast":  14.26,
+        "surface_px":  "#F0F1F3",
+        "surface_contrast":  14.26
+    },
+    {
+        "theme":  "glass-dark",
+        "backdrop":  "colour",
+        "backplates":  true,
+        "opacity":  0.55,
+        "backdrop_px":  "#FFD009",
+        "chip_px":  "#34363A",
+        "chip_contrast":  10.88,
+        "surface_px":  "#34363A",
+        "surface_contrast":  10.88
+    },
+    {
+        "theme":  "glass-light",
+        "backdrop":  "colour",
+        "backplates":  true,
+        "opacity":  0.55,
+        "backdrop_px":  "#FFD009",
+        "chip_px":  "#E4E5E7",
+        "chip_contrast":  13.84,
+        "surface_px":  "#E4E5E7",
+        "surface_contrast":  13.84
+    }
+]

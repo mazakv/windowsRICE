@@ -1,7 +1,8 @@
 //! windowsRICE Windows integration layer.
 //!
-//! Phase 1 scope: **read-only queries only.** Nothing in this crate writes
-//! to the registry, changes system settings, registers startup entries,
+//! Scope: **read-only queries only** (Phase 1 diagnostics, and the Phase 4
+//! live state in [`live`]). Nothing in this crate writes to the registry,
+//! changes system settings, registers startup entries,
 //! modifies the shell or requests elevation. The `read_only_guard` test in
 //! `apps/diag` enforces this by rejecting known write APIs in the source.
 //!
@@ -15,6 +16,7 @@ compile_error!("windowsrice-windows supports Windows only");
 pub mod display;
 pub mod error;
 pub mod gpu;
+pub mod live;
 pub mod registry_read;
 pub mod report;
 pub mod session;

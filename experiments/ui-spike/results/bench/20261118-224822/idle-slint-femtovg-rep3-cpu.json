@@ -1,0 +1,9 @@
+{
+  "window_seconds": 602.4224316,
+  "pid": 4920,
+  "rep": 3,
+  "window_start_s": 300,
+  "window_end_s": 902.4224316,
+  "cpu_seconds": 0.0,
+  "config": "slint-femtovg"
+}

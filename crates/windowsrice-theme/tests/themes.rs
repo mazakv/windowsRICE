@@ -1,5 +1,8 @@
 //! Theme parsing, preset loading and validation tests.
 
+/// Built-in themes shipped with windowsRICE (8 until Phase 8, 17 since).
+const BUILTIN_COUNT: usize = 17;
+
 use std::collections::HashSet;
 
 use windowsrice_theme::contrast::{palette_checks, translucent_surface_checks};
@@ -55,7 +58,7 @@ fn expect_parse_error(text: &str, needle: &str) {
 #[test]
 fn all_eight_presets_load_without_errors() {
     let all = load_all_builtin();
-    assert_eq!(all.len(), 8);
+    assert_eq!(all.len(), BUILTIN_COUNT);
     for (preset, result) in &all {
         let loaded = result
             .as_ref()
@@ -82,10 +85,19 @@ fn preset_names_ids_and_order() {
             "windowsRICE AMOLED",
             "windowsRICE Ambient",
             "windowsRICE Light",
+            "windowsRICE Midnight",
+            "windowsRICE Soft Gray",
+            "windowsRICE Blue Accent",
+            "windowsRICE Monochrome",
+            "windowsRICE Ocean",
+            "windowsRICE Neon",
+            "windowsRICE Pastel",
+            "windowsRICE Warm",
+            "windowsRICE High Contrast",
         ]
     );
     let ids: HashSet<_> = BUILTIN_PRESETS.iter().map(|p| p.id).collect();
-    assert_eq!(ids.len(), 8);
+    assert_eq!(ids.len(), BUILTIN_COUNT);
 }
 
 #[test]

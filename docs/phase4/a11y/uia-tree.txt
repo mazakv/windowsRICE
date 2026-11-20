@@ -1,0 +1,13 @@
+﻿ToolBar                  id=panel                name="windowsRICE panel" focusable=False enabled=True focused=False bounds=[12,12,3816x51] patterns= help="" fw=windowsRICE
+  Group                    id=group.app            name="Application" focusable=False enabled=True focused=False bounds=[30,18,291x39] patterns= help="" fw=windowsRICE
+  Button                   id=menu                 name="windowsRICE menu" focusable=True enabled=True focused=False bounds=[30,18,39x39] patterns=InvokePattern,ExpandCollapsePattern help="Opens the windowsRICE menu. Press Enter, Space or Down Arrow." fw=windowsRICE
+  Text                     id=active-window        name="Active window: Documents - File Explorer" focusable=True enabled=True focused=False bounds=[75,18,246x39] patterns= help="" fw=windowsRICE
+  Group                    id=group.clock          name="Clock" focusable=False enabled=True focused=False bounds=[1829,18,182x39] patterns= help="" fw=windowsRICE
+  Text                     id=clock                name="Clock: 09:20, Thursday, November 19, 2026" focusable=True enabled=True focused=False bounds=[1829,18,182x39] patterns= help="" fw=windowsRICE
+  Group                    id=group.status         name="System status" focusable=False enabled=True focused=False bounds=[3294,18,516x39] patterns= help="" fw=windowsRICE
+  Text                     id=status.network       name="Network: connected to the internet, wired" focusable=True enabled=True focused=False bounds=[3294,18,46x39] patterns= help="" fw=windowsRICE
+  Text                     id=status.volume        name="Volume 98%" focusable=True enabled=True focused=False bounds=[3346,18,90x39] patterns= help="" fw=windowsRICE
+  Text                     id=status.cpu           name="CPU usage 19%" focusable=True enabled=True focused=False bounds=[3442,18,100x39] patterns= help="" fw=windowsRICE
+  Text                     id=status.gpu           name="GPU usage 74%" focusable=True enabled=True focused=False bounds=[3548,18,105x39] patterns= help="" fw=windowsRICE
+  Text                     id=status.memory        name="Memory: 21.3 GB of 31.9 GB used (67%)" focusable=True enabled=True focused=False bounds=[3659,18,109x39] patterns= help="" fw=windowsRICE
+  Text                     id=status.windowsrice   name="windowsRICE status: normal" focusable=True enabled=True focused=False bounds=[3774,18,36x39] patterns= help="" fw=windowsRICE

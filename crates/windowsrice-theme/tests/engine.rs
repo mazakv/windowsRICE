@@ -1,6 +1,9 @@
 //! Theme engine tests: catalog loading, activation, rollback, fallback and
 //! configuration persistence. All file-system tests run in temporary folders.
 
+/// Built-in themes shipped with windowsRICE (8 until Phase 8, 17 since).
+const BUILTIN_COUNT: usize = 17;
+
 use std::path::{Path, PathBuf};
 
 use windowsrice_core::config::{
@@ -91,7 +94,7 @@ fn default_ids_agree_between_core_and_theme() {
 #[test]
 fn builtin_catalog_has_eight_valid_themes_with_versions() {
     let c = ThemeCatalog::builtin_only();
-    assert_eq!(c.entries().len(), 8);
+    assert_eq!(c.entries().len(), BUILTIN_COUNT);
     assert!(c.issues().is_empty());
     for e in c.entries() {
         assert!(e.is_builtin());
@@ -107,7 +110,7 @@ fn builtin_catalog_has_eight_valid_themes_with_versions() {
         .iter()
         .map(|e| e.version.fingerprint.clone())
         .collect();
-    assert_eq!(fps.len(), 8);
+    assert_eq!(fps.len(), BUILTIN_COUNT);
     for (a, b) in c.entries().iter().zip(again.entries()) {
         assert_eq!(a.version, b.version);
     }
@@ -117,7 +120,7 @@ fn builtin_catalog_has_eight_valid_themes_with_versions() {
 fn missing_user_dir_is_not_an_issue() {
     let tmp = tempfile::tempdir().unwrap();
     let c = ThemeCatalog::load(Some(&tmp.path().join("does-not-exist")));
-    assert_eq!(c.entries().len(), 8);
+    assert_eq!(c.entries().len(), BUILTIN_COUNT);
     assert!(c.issues().is_empty());
 }
 
@@ -224,7 +227,7 @@ fn rejects_bad_user_theme_files_with_reasons() {
     // The first duplicate is kept; built-ins are not replaced.
     assert_eq!(c.get("dup").unwrap().theme.meta.name, "Dup One");
     assert!(c.get("windowsrice-glass").unwrap().is_builtin());
-    assert_eq!(c.entries().len(), 9);
+    assert_eq!(c.entries().len(), BUILTIN_COUNT + 1);
     // Issues name the declared id when it can be read, and render readable text.
     assert_eq!(
         c.issue_for("bold-one")
@@ -956,7 +959,10 @@ fn v1_config_is_migrated_and_original_preserved_before_first_save() {
 
     // Migrated values survive the save.
     let now = Config::load_or_default(&e.config).0;
-    assert_eq!(now.schema_version, 2);
+    assert_eq!(
+        now.schema_version,
+        windowsrice_core::config::CONFIG_SCHEMA_VERSION
+    );
     assert_eq!(now.theme.active, "windowsrice-ambient");
     assert_eq!(now.launcher.hotkey.to_string(), "Alt+Shift+K");
 
@@ -1056,4 +1062,77 @@ fn notices_render_readable_text() {
         text.iter()
             .any(|t| t.contains("x.toml") && t.contains("rejected"))
     );
+}
+
+#[test]
+fn reapply_follows_system_mode_without_writing() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = dir.path().join("config.toml");
+    let mut service = ThemeService::start_with(&config_path, None, Some(Mode::Dark), &mut NoopSink);
+    assert_eq!(service.applied().unwrap().mode, Mode::Dark);
+    let notices = service.reapply(Some(Mode::Light), &mut NoopSink);
+    assert!(
+        notices
+            .iter()
+            .all(|n| !matches!(n, Notice::ActivationFailed { .. }))
+    );
+    let applied = service.applied().unwrap();
+    assert_eq!(applied.id, DEFAULT_THEME_ID);
+    assert_eq!(applied.mode, Mode::Light);
+    assert!(
+        !config_path.exists(),
+        "reapply must not write the configuration"
+    );
+}
+
+#[test]
+fn update_config_saves_valid_bar_changes_only() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = dir.path().join("config.toml");
+    let mut service = ThemeService::start_with(&config_path, None, Some(Mode::Dark), &mut NoopSink);
+    // Invalid change: rejected, nothing written, memory unchanged.
+    let err = service
+        .update_config(|c| c.bar.height = Some(500))
+        .unwrap_err();
+    assert!(err.contains("bar.height"), "{err}");
+    assert!(!config_path.exists());
+    assert_eq!(service.config().bar.height, None);
+    // Valid change: saved and reloaded identically; theme selection untouched.
+    service
+        .update_config(|c| {
+            c.bar.height = Some(40);
+            c.bar.auto_hide = true;
+            c.theme.active = "windowsrice-hypr".into(); // ignored: use select()
+        })
+        .unwrap();
+    let saved = Config::load_or_default(&config_path).0;
+    assert_eq!(saved.bar.height, Some(40));
+    assert!(saved.bar.auto_hide);
+    assert_eq!(saved.theme.active, DEFAULT_THEME_ID);
+    assert_eq!(&saved, service.config());
+}
+
+#[test]
+fn update_config_preserves_a_v2_original_before_first_save() {
+    let dir = tempfile::tempdir().unwrap();
+    let config_path = dir.path().join("config.toml");
+    let v2 = "schema_version = 2\n[theme]\nactive = \"windowsrice-glass\"\n";
+    std::fs::write(&config_path, v2).unwrap();
+    let mut service = ThemeService::start_with(&config_path, None, Some(Mode::Dark), &mut NoopSink);
+    let notices = service.update_config(|c| c.bar.spacing = 6).unwrap();
+    assert!(
+        notices
+            .iter()
+            .any(|n| matches!(n, Notice::OriginalConfigPreserved { .. }))
+    );
+    let preserved: Vec<_> = std::fs::read_dir(dir.path())
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .filter(|p| p.to_string_lossy().contains(".v2-"))
+        .collect();
+    assert_eq!(preserved.len(), 1);
+    assert_eq!(std::fs::read_to_string(&preserved[0]).unwrap(), v2);
+    let saved = Config::load_or_default(&config_path).0;
+    assert_eq!(saved.theme.active, "windowsrice-glass");
+    assert_eq!(saved.bar.spacing, 6);
 }

@@ -1,0 +1,12 @@
+[package]
+name = "spike-common"
+description = "Shared content, tokens, timing and DWM helpers for both UI spike candidates"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+windows.workspace = true
+windowsrice-theme.workspace = true
+serde_json.workspace = true

@@ -1,0 +1,37 @@
+{
+  "backdrop": "Acrylic",
+  "candidate": "slint",
+  "first_frame_ms_since_process_creation": 461.16796875,
+  "frame_times_s": [
+    0.2068107,
+    0.2235659,
+    41.0899066,
+    101.0895089,
+    161.0899584,
+    221.089277,
+    281.0892986,
+    341.0898562,
+    401.0900081,
+    461.0892572,
+    521.0894699,
+    581.0896052,
+    641.0901072,
+    701.0895331,
+    761.0898845,
+    821.0893595,
+    881.0895728
+  ],
+  "frames_total": 17,
+  "interactions": [],
+  "renderer": "Slint 1.19.0, winit 0.30 backend, FemtoVG renderer (OpenGL via WGL)",
+  "run_seconds": 905.0020842,
+  "scale": 1.5,
+  "window_log": [
+    "topmost+toolwindow: true",
+    "dark mode: true",
+    "round corners: true",
+    "extend frame: true",
+    "system backdrop DWM_SYSTEMBACKDROP_TYPE(3): true",
+    "applied after 223 ms"
+  ]
+}

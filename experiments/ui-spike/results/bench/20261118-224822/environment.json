@@ -1,0 +1,16 @@
+{
+  "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
+  "params": {
+    "Reps": 3,
+    "WarmSec": 300,
+    "SampleSec": 5,
+    "MeasureSec": 600,
+    "InteractionSec": 60,
+    "StartupLaunches": 10
+  },
+  "power_plan": "전원 구성표 GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (균형 조정)",
+  "run_id": "20261118-224822",
+  "gpu": "AMD Radeon RX 9070 XT",
+  "windows": "10.0.26200.9974 (25H2)",
+  "gpu_driver": "32.0.32015.7029"
+}

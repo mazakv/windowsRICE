@@ -1,0 +1,1 @@
+﻿ControlType.Pane name="windowsRICE spike — Direct2D" focusable=False enabled=True

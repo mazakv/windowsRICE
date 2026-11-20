@@ -26,8 +26,8 @@ macro_rules! preset {
     };
 }
 
-/// The eight built-in presets, in display order.
-pub const BUILTIN_PRESETS: [BuiltinPreset; 8] = [
+/// The built-in presets, in display order.
+pub const BUILTIN_PRESETS: [BuiltinPreset; 17] = [
     preset!("windowsrice-default", "windowsrice-default.toml"),
     preset!("windowsrice-minimal", "windowsrice-minimal.toml"),
     preset!("windowsrice-hypr", "windowsrice-hypr.toml"),
@@ -39,6 +39,18 @@ pub const BUILTIN_PRESETS: [BuiltinPreset; 8] = [
     preset!("windowsrice-amoled", "windowsrice-amoled.toml"),
     preset!("windowsrice-ambient", "windowsrice-ambient.toml"),
     preset!("windowsrice-light", "windowsrice-light.toml"),
+    preset!("windowsrice-midnight", "windowsrice-midnight.toml"),
+    preset!("windowsrice-soft-gray", "windowsrice-soft-gray.toml"),
+    preset!("windowsrice-blue-accent", "windowsrice-blue-accent.toml"),
+    preset!("windowsrice-monochrome", "windowsrice-monochrome.toml"),
+    preset!("windowsrice-ocean", "windowsrice-ocean.toml"),
+    preset!("windowsrice-neon", "windowsrice-neon.toml"),
+    preset!("windowsrice-pastel", "windowsrice-pastel.toml"),
+    preset!("windowsrice-warm", "windowsrice-warm.toml"),
+    preset!(
+        "windowsrice-high-contrast",
+        "windowsrice-high-contrast.toml"
+    ),
 ];
 
 /// Parses and validates one built-in preset by id.

@@ -1,0 +1,22 @@
+{
+  "backdrop": "Acrylic",
+  "candidate": "d2d",
+  "first_frame_ms_since_process_creation": 122.37890625,
+  "frame_times_s": [
+    0.0800561,
+    2.9686966
+  ],
+  "frames_total": 2,
+  "interactions": [],
+  "renderer": "Direct2D 1.1 + DirectWrite + DirectComposition (D3D11 hardware)",
+  "run_seconds": 3.0691347,
+  "scale": 1.5,
+  "window_log": [
+    "topmost+toolwindow: true",
+    "dark mode: true",
+    "round corners: true",
+    "extend frame: true",
+    "system backdrop DWM_SYSTEMBACKDROP_TYPE(3): true",
+    "WM_KILLFOCUS at 2.97s"
+  ]
+}

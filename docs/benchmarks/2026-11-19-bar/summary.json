@@ -1,0 +1,241 @@
+{
+  "input_latency_ms": [
+    1.0259,
+    1.0192999999999999,
+    1.0192,
+    1.2133,
+    1.0892,
+    1.1766999999999999,
+    1.4392,
+    0.9889,
+    1.1875,
+    1.0725,
+    1.1091,
+    1.0493,
+    1.1241,
+    1.1336,
+    1.1129,
+    1.1414000000000002,
+    1.1178,
+    1.6247,
+    1.0183,
+    1.279
+  ],
+  "idle": [
+    {
+      "config": "default",
+      "rep": 1,
+      "cpu_pct_core": 0.41252423443744324,
+      "ws_mib": 56.08984375,
+      "priv_mib": 47.71484375,
+      "handles": 1250.0,
+      "gpu_util": 0.0,
+      "gpu_util_max": 0.003573076187981023,
+      "gpu_ded_mib": 21.13671875,
+      "gpu_sh_mib": 3.84765625,
+      "redraws": 75,
+      "redraws_per_min": 37.12718109936989,
+      "uia_calls": 825,
+      "uia_fetch_ms": null,
+      "sample_cost_ms": null
+    },
+    {
+      "config": "no-gpu-counter",
+      "rep": 1,
+      "cpu_pct_core": 0.38907263294151,
+      "ws_mib": 49.8984375,
+      "priv_mib": 41.82421875,
+      "handles": 1242.0,
+      "gpu_util": 0.006826912024995934,
+      "gpu_util_max": 0.007951653944020356,
+      "gpu_ded_mib": 21.13671875,
+      "gpu_sh_mib": 3.72265625,
+      "redraws": 114,
+      "redraws_per_min": 56.773478598825136,
+      "uia_calls": 792,
+      "uia_fetch_ms": null,
+      "sample_cost_ms": null
+    },
+    {
+      "config": "uia-client",
+      "rep": 1,
+      "cpu_pct_core": 0.5314159413157399,
+      "ws_mib": 58.15234375,
+      "priv_mib": 48.6328125,
+      "handles": 1271.0,
+      "gpu_util": 0.0035087420529241516,
+      "gpu_util_max": 0.00630874525375521,
+      "gpu_ded_mib": 21.13671875,
+      "gpu_sh_mib": 3.72265625,
+      "redraws": 70,
+      "redraws_per_min": 34.8401475672368,
+      "uia_calls": 7209,
+      "uia_fetch_ms": 6.594049999999999,
+      "sample_cost_ms": null
+    },
+    {
+      "config": "default",
+      "rep": 2,
+      "cpu_pct_core": 0.492769565401693,
+      "ws_mib": 56.30859375,
+      "priv_mib": 48.220703125,
+      "handles": 1250.0,
+      "gpu_util": 0.003479774537485892,
+      "gpu_util_max": 0.009724559023334401,
+      "gpu_ded_mib": 21.13671875,
+      "gpu_sh_mib": 3.84765625,
+      "redraws": 83,
+      "redraws_per_min": 41.330398917059895,
+      "uia_calls": 810,
+      "uia_fetch_ms": null,
+      "sample_cost_ms": null
+    },
+    {
+      "config": "no-gpu-counter",
+      "rep": 2,
+      "cpu_pct_core": 0.337169090075415,
+      "ws_mib": 49.671875,
+      "priv_mib": 41.69140625,
+      "handles": 1244.0,
+      "gpu_util": 0.0035818517401664356,
+      "gpu_util_max": 0.007058998915481075,
+      "gpu_ded_mib": 21.13671875,
+      "gpu_sh_mib": 3.59765625,
+      "redraws": 103,
+      "redraws_per_min": 51.29119942562621,
+      "uia_calls": 795,
+      "uia_fetch_ms": null,
+      "sample_cost_ms": null
+    },
+    {
+      "config": "uia-client",
+      "rep": 2,
+      "cpu_pct_core": 0.5054617213720205,
+      "ws_mib": 58.099609375,
+      "priv_mib": 49.0546875,
+      "handles": 1272.5,
+      "gpu_util": 0.005964695100461361,
+      "gpu_util_max": 0.006956705803587223,
+      "gpu_ded_mib": 21.13671875,
+      "gpu_sh_mib": 3.84765625,
+      "redraws": 110,
+      "redraws_per_min": 54.745392591677295,
+      "uia_calls": 7218,
+      "uia_fetch_ms": 6.6753,
+      "sample_cost_ms": null
+    },
+    {
+      "config": "default",
+      "rep": 3,
+      "cpu_pct_core": 0.37601782860496363,
+      "ws_mib": 55.98828125,
+      "priv_mib": 47.6796875,
+      "handles": 1252.0,
+      "gpu_util": 0.0035581830185146823,
+      "gpu_util_max": 0.006079048455371306,
+      "gpu_ded_mib": 21.13671875,
+      "gpu_sh_mib": 3.59765625,
+      "redraws": 70,
+      "redraws_per_min": 34.852962872073874,
+      "uia_calls": 783,
+      "uia_fetch_ms": null,
+      "sample_cost_ms": null
+    },
+    {
+      "config": "no-gpu-counter",
+      "rep": 3,
+      "cpu_pct_core": 0.28529590917843467,
+      "ws_mib": 49.94921875,
+      "priv_mib": 41.9609375,
+      "handles": 1242.0,
+      "gpu_util": 0.003445983771005177,
+      "gpu_util_max": 0.003566318659166926,
+      "gpu_ded_mib": 21.13671875,
+      "gpu_sh_mib": 3.72265625,
+      "redraws": 68,
+      "redraws_per_min": 33.86203082030585,
+      "uia_calls": 786,
+      "uia_fetch_ms": null,
+      "sample_cost_ms": null
+    },
+    {
+      "config": "uia-client",
+      "rep": 3,
+      "cpu_pct_core": 0.4407207082804293,
+      "ws_mib": 58.279296875,
+      "priv_mib": 48.751953125,
+      "handles": 1276.0,
+      "gpu_util": 0.0068709660394342936,
+      "gpu_util_max": 0.010295035603664796,
+      "gpu_ded_mib": 21.13671875,
+      "gpu_sh_mib": 3.84765625,
+      "redraws": 108,
+      "redraws_per_min": 53.75755651119401,
+      "uia_calls": 7215,
+      "uia_fetch_ms": 6.5141,
+      "sample_cost_ms": null
+    }
+  ],
+  "startup": [
+    {
+      "first_frame_ms": 194.7092,
+      "window_ms": 194.7092,
+      "render_init_ms": 68.2292,
+      "exit": 0
+    },
+    {
+      "first_frame_ms": 179.9727,
+      "window_ms": 179.9727,
+      "render_init_ms": 67.6704,
+      "exit": 0
+    },
+    {
+      "first_frame_ms": 182.9803,
+      "window_ms": 182.9803,
+      "render_init_ms": 69.4384,
+      "exit": 0
+    },
+    {
+      "first_frame_ms": 179.0751,
+      "window_ms": 179.0751,
+      "render_init_ms": 63.6722,
+      "exit": 0
+    },
+    {
+      "first_frame_ms": 179.9521,
+      "window_ms": 179.9521,
+      "render_init_ms": 62.8093,
+      "exit": 0
+    },
+    {
+      "first_frame_ms": 176.3866,
+      "window_ms": 176.3866,
+      "render_init_ms": 62.70969999999999,
+      "exit": 0
+    },
+    {
+      "first_frame_ms": 177.2956,
+      "window_ms": 177.2956,
+      "render_init_ms": 63.0439,
+      "exit": 0
+    },
+    {
+      "first_frame_ms": 174.5581,
+      "window_ms": 174.5581,
+      "render_init_ms": 65.22980000000001,
+      "exit": 0
+    },
+    {
+      "first_frame_ms": 176.9064,
+      "window_ms": 176.9064,
+      "render_init_ms": 66.07889999999999,
+      "exit": 0
+    },
+    {
+      "first_frame_ms": 174.1132,
+      "window_ms": 174.1132,
+      "render_init_ms": 62.315200000000004,
+      "exit": 0
+    }
+  ]
+}

@@ -3,7 +3,7 @@ resolver = "3"
 members = ["crates/*", "apps/*"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.0-rc.1"
 edition = "2024"
 rust-version = "1.100"
 publish = false
@@ -13,6 +13,9 @@ publish = false
 [workspace.dependencies]
 windowsrice-core = { path = "crates/windowsrice-core" }
 windowsrice-windows = { path = "crates/windowsrice-windows" }
+windowsrice-theme = { path = "crates/windowsrice-theme" }
+windowsrice-ui = { path = "crates/windowsrice-ui" }
+windowsrice-render = { path = "crates/windowsrice-render" }
 
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"

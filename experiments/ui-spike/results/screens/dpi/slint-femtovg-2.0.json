@@ -1,0 +1,23 @@
+{
+  "backdrop": "Acrylic",
+  "candidate": "slint",
+  "first_frame_ms_since_process_creation": 469.908203125,
+  "frame_times_s": [
+    0.2216665,
+    0.2385136,
+    4.7582151
+  ],
+  "frames_total": 3,
+  "interactions": [],
+  "renderer": "Slint 1.19.0, winit 0.30 backend, FemtoVG renderer (OpenGL via WGL)",
+  "run_seconds": 7.0040841,
+  "scale": 2.0,
+  "window_log": [
+    "topmost+toolwindow: true",
+    "dark mode: true",
+    "round corners: true",
+    "extend frame: true",
+    "system backdrop DWM_SYSTEMBACKDROP_TYPE(3): true",
+    "applied after 237 ms"
+  ]
+}

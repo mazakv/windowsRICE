@@ -1,0 +1,26 @@
+﻿[
+    {
+        "candidate":  "slint-femtovg",
+        "uia_nodes":  16,
+        "uia_buttons":  4,
+        "window_got_foreground":  true,
+        "enter_changed_selection":  true,
+        "exit_code":  0
+    },
+    {
+        "candidate":  "slint-software",
+        "uia_nodes":  16,
+        "uia_buttons":  4,
+        "window_got_foreground":  true,
+        "enter_changed_selection":  false,
+        "exit_code":  0
+    },
+    {
+        "candidate":  "d2d",
+        "uia_nodes":  1,
+        "uia_buttons":  0,
+        "window_got_foreground":  true,
+        "enter_changed_selection":  true,
+        "exit_code":  0
+    }
+]

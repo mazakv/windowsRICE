@@ -1,0 +1,297 @@
+﻿[
+    {
+        "check":  "bar window created",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "full width, top edge",
+        "pass":  true,
+        "detail":  "0,0,3840,51"
+    },
+    {
+        "check":  "work area starts below the bar",
+        "pass":  true,
+        "detail":  "work top 51 (before 0), bar bottom 51"
+    },
+    {
+        "check":  "bar root is a ToolBar named \"windowsRICE bar\"",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "three region groups",
+        "pass":  true,
+        "detail":  "Left section | Center section | Right section"
+    },
+    {
+        "check":  "every element named",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "module.menu present",
+        "pass":  true,
+        "detail":  "windowsRICE menu"
+    },
+    {
+        "check":  "module.active-window present",
+        "pass":  true,
+        "detail":  "Active window: Documents - File Explorer"
+    },
+    {
+        "check":  "module.clock present",
+        "pass":  true,
+        "detail":  "Clock: 21:50, Thursday, November 19, 2026"
+    },
+    {
+        "check":  "module.download present",
+        "pass":  true,
+        "detail":  "Download speed 1 KB/s"
+    },
+    {
+        "check":  "module.upload present",
+        "pass":  true,
+        "detail":  "Upload speed 1 KB/s"
+    },
+    {
+        "check":  "module.network present",
+        "pass":  true,
+        "detail":  "Network: connected to the internet, wired"
+    },
+    {
+        "check":  "module.volume present",
+        "pass":  true,
+        "detail":  "Volume 100%"
+    },
+    {
+        "check":  "module.cpu present",
+        "pass":  true,
+        "detail":  "CPU usage 5%"
+    },
+    {
+        "check":  "module.gpu present",
+        "pass":  true,
+        "detail":  "GPU usage 15%"
+    },
+    {
+        "check":  "module.vram present",
+        "pass":  true,
+        "detail":  "Video memory: 4.0 GB of 15.9 GB used (25%)"
+    },
+    {
+        "check":  "module.ram present",
+        "pass":  true,
+        "detail":  "Memory: 18.2 GB of 31.9 GB used (57%)"
+    },
+    {
+        "check":  "module.notifications present",
+        "pass":  true,
+        "detail":  "Notifications: on"
+    },
+    {
+        "check":  "battery hidden on a computer without one",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "menu: Button with Invoke + ExpandCollapse, collapsed",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "all bounds inside the bar",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "hit testing returns the menu",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "UIA SetFocus (provider view)",
+        "pass":  true,
+        "detail":  "module.cpu"
+    },
+    {
+        "check":  "keyboard: Tab, Left, Home, End",
+        "pass":  true,
+        "detail":  "module.gpu,module.cpu,module.menu,module.notifications"
+    },
+    {
+        "check":  "UIA focus-changed events",
+        "pass":  true,
+        "detail":  "5: module.cpu,module.gpu,module.cpu,module.menu,module.notifications"
+    },
+    {
+        "check":  "UIA Name-changed events",
+        "pass":  true,
+        "detail":  "7: module.download: Download speed 437 B/s | module.upload: Upload speed 361 B/s"
+    },
+    {
+        "check":  "popup window opened",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "popup root: Window \"windowsRICE settings\"",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "menu reports Expanded while popup is open",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "one theme radio button per built-in theme (17), one selected",
+        "pass":  true,
+        "detail":  "17"
+    },
+    {
+        "check":  "module and bar check boxes (15 + 3)",
+        "pass":  true,
+        "detail":  "18"
+    },
+    {
+        "check":  "menu check box disabled",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "battery listed as not on this computer",
+        "pass":  true,
+        "detail":  "Show Battery — not on this computer"
+    },
+    {
+        "check":  "every popup element named",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "toggle CPU off: bar no longer shows CPU",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "toggle CPU off: saved",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "toggle state reported Off",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "move VRAM up: VRAM now before GPU in the bar",
+        "pass":  true,
+        "detail":  "module.download,module.upload,module.network,module.volume,module.vram,module.gpu,module.ram,module.notifications"
+    },
+    {
+        "check":  "move VRAM up: saved order",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "RAM interval 5 s -\u003e 2 s saved",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "theme Glass selected and saved",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "height +: bar 57 px and work area follows",
+        "pass":  true,
+        "detail":  "bar bottom 57, work top 57"
+    },
+    {
+        "check":  "height saved",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "reserve off: work area released",
+        "pass":  true,
+        "detail":  "work top 0"
+    },
+    {
+        "check":  "reserve on: work area taken again",
+        "pass":  true,
+        "detail":  "work top 57"
+    },
+    {
+        "check":  "close button closes the popup",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "menu reports Collapsed after closing",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "auto-hide: collapsed to a 2 px strip, work area released",
+        "pass":  true,
+        "detail":  "height 2, work top 0"
+    },
+    {
+        "check":  "auto-hide: pointer at the top edge expands it",
+        "pass":  true,
+        "detail":  "height 57"
+    },
+    {
+        "check":  "exit from the popup: clean exit, diagnostics written",
+        "pass":  true,
+        "detail":  "settings: exit code=0"
+    },
+    {
+        "check":  "reservation released after exit",
+        "pass":  true,
+        "detail":  "work top 0"
+    },
+    {
+        "check":  "provider lint clean during the run",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "no errors during the run",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "restart: CPU still hidden, height 38 kept",
+        "pass":  true,
+        "detail":  "bottom 57"
+    },
+    {
+        "check":  "restart: Glass theme applied",
+        "pass":  true,
+        "detail":  "windowsrice-glass"
+    },
+    {
+        "check":  "v2 file untouched while only read",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "first save preserves the v2 original",
+        "pass":  true,
+        "detail":  "config.toml.v2-1795092673484.bak"
+    },
+    {
+        "check":  "migrated file is v3 and keeps v2 values",
+        "pass":  true,
+        "detail":  ""
+    },
+    {
+        "check":  "migration reported as a notice",
+        "pass":  true,
+        "detail":  ""
+    }
+]

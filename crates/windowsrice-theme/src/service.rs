@@ -52,6 +52,7 @@ enum Preserve {
 #[derive(Debug)]
 pub struct ThemeService {
     config_path: PathBuf,
+    user_themes_dir: Option<PathBuf>,
     config: Config,
     engine: ThemeEngine,
     notices: Vec<Notice>,
@@ -116,6 +117,7 @@ impl ThemeService {
 
         Self {
             config_path: config_path.to_path_buf(),
+            user_themes_dir: user_themes_dir.map(Path::to_path_buf),
             config,
             engine,
             notices,
@@ -194,6 +196,68 @@ impl ThemeService {
             .map_err(|e| format!("could not preserve {}: {e}", self.config_path.display()))?;
         self.preserve = None;
         Ok(Some(target))
+    }
+
+    /// Changes configuration other than the theme selection (for example the
+    /// `[bar]` section) and saves it. The change is validated first; if it is
+    /// invalid or cannot be saved, nothing changes in memory or on disk.
+    /// Before the first save over a migrated or unreadable file, the original
+    /// is preserved exactly as for [`ThemeService::select`]. The theme
+    /// selection is kept as it is; use `select` to change it.
+    pub fn update_config(
+        &mut self,
+        change: impl FnOnce(&mut Config),
+    ) -> Result<Vec<Notice>, String> {
+        let mut next = self.config.clone();
+        change(&mut next);
+        next.theme = self.config.theme.clone();
+        next.validate().map_err(|e| e.to_string())?;
+        let mut notices = Vec::new();
+        if let Some(path) = self.preserve_original()? {
+            notices.push(Notice::OriginalConfigPreserved { path });
+        }
+        next.save_atomic(&self.config_path)
+            .map_err(|e| e.to_string())?;
+        self.config = next;
+        Ok(notices)
+    }
+
+    /// Folder of user theme files, if known.
+    pub fn user_themes_dir(&self) -> Option<&Path> {
+        self.user_themes_dir.as_deref()
+    }
+
+    pub fn config_path(&self) -> &Path {
+        &self.config_path
+    }
+
+    /// Reloads the theme catalog (after a user theme file was created,
+    /// changed or deleted) and re-applies the persisted selection. Writes
+    /// nothing; if the selected theme disappeared, the usual fallback to
+    /// windowsRICE Default applies and is reported in the notices.
+    pub fn reload_catalog(
+        &mut self,
+        system_mode: Option<Mode>,
+        sink: &mut dyn ThemeSink,
+    ) -> Vec<Notice> {
+        let catalog = ThemeCatalog::load(self.user_themes_dir.as_deref());
+        let mut notices: Vec<Notice> = catalog
+            .issues()
+            .iter()
+            .cloned()
+            .map(Notice::CatalogIssue)
+            .collect();
+        let (engine, mut n) = ThemeEngine::start(catalog, &self.config.theme, system_mode, sink);
+        self.engine = engine;
+        notices.append(&mut n);
+        notices
+    }
+
+    /// Re-applies the persisted selection, for example after Windows
+    /// switched between light and dark mode while the mode preference is
+    /// Auto. Writes nothing; the selection itself is unchanged.
+    pub fn reapply(&mut self, system_mode: Option<Mode>, sink: &mut dyn ThemeSink) -> Vec<Notice> {
+        self.engine.apply_selection(system_mode, sink)
     }
 
     /// The theme the renderer accepted, if any.

@@ -1,0 +1,16 @@
+﻿ControlType.Window name="windowsRICE spike — Slint" focusable=True enabled=True
+  ControlType.Button name="Workspace 1" focusable=True enabled=True
+  ControlType.Text name="1" focusable=False enabled=True
+  ControlType.Button name="Workspace 2" focusable=True enabled=True
+  ControlType.Text name="2" focusable=False enabled=True
+  ControlType.Button name="Workspace 3" focusable=True enabled=True
+  ControlType.Text name="3" focusable=False enabled=True
+  ControlType.Button name="Workspace 4" focusable=True enabled=True
+  ControlType.Text name="4" focusable=False enabled=True
+  ControlType.Text name="문서 — 파일 탐색기" focusable=False enabled=True
+  ControlType.Text name="" focusable=False enabled=True
+  ControlType.Text name="" focusable=False enabled=True
+  ControlType.Text name="" focusable=False enabled=True
+  ControlType.Text name="한" focusable=False enabled=True
+  ControlType.Text name="22:42" focusable=False enabled=True
+  ControlType.Text name="11월 18일 수요일" focusable=False enabled=True

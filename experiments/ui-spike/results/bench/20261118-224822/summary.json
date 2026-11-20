@@ -1,0 +1,65 @@
+{
+  "startup_slint-femtovg": {
+    "first_frame_ms": 437.220703125,
+    "window_visible_ms": 41.504149999999996
+  },
+  "startup_slint-software": {
+    "first_frame_ms": null,
+    "window_visible_ms": 32.0435
+  },
+  "startup_d2d": {
+    "first_frame_ms": 119.1025390625,
+    "window_visible_ms": 32.512649999999994
+  },
+  "interaction_slint-femtovg": {
+    "frames_median": 31.0,
+    "fps_median": 167.70154750660257,
+    "latency_p95_ms": 0.5913,
+    "latency_median_ms": 0.4173
+  },
+  "interaction_d2d": {
+    "frames_median": 32.0,
+    "fps_median": 177.5410563692854,
+    "latency_p95_ms": 0.8996,
+    "latency_median_ms": 0.7216
+  },
+  "idle_slint-femtovg": {
+    "reps": 3,
+    "cpu_pct_one_core": 0.002593738270472294,
+    "gpu_util_max": 0.0,
+    "working_set_mib": 218.3203125,
+    "system_cpu_pct": 1.83,
+    "cpu_pct_total": 0.00010807242793634557,
+    "redraws": 10.0,
+    "gpu_util_median": 0.0,
+    "gpu_dedicated_mib": 123.65234375,
+    "gpu_shared_mib": 109.21484375,
+    "private_mib": 258.578125
+  },
+  "idle_slint-software": {
+    "reps": 3,
+    "cpu_pct_one_core": 0.0025939111947670223,
+    "gpu_util_max": 0.0,
+    "working_set_mib": 22.2109375,
+    "system_cpu_pct": 1.4849999999999999,
+    "cpu_pct_total": 0.0001080796331152926,
+    "redraws": null,
+    "gpu_util_median": 0.0,
+    "gpu_dedicated_mib": 0.0,
+    "gpu_shared_mib": 0.0,
+    "private_mib": 4.0703125
+  },
+  "idle_d2d": {
+    "reps": 3,
+    "cpu_pct_one_core": 0.0025940643734992837,
+    "gpu_util_max": 0.0041,
+    "working_set_mib": 46.97265625,
+    "system_cpu_pct": 2.2350000000000003,
+    "cpu_pct_total": 0.00010808601556247016,
+    "redraws": 11.0,
+    "gpu_util_median": 0.0,
+    "gpu_dedicated_mib": 19.26171875,
+    "gpu_shared_mib": 5.47265625,
+    "private_mib": 38.10546875
+  }
+}
