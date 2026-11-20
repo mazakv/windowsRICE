@@ -1,4 +1,4 @@
-# Verifies the distributable zip (integrity) and the installer (behaviour)
+﻿# Verifies the distributable zip (integrity) and the installer (behaviour)
 # in a sandbox under target\pkgtest. The registry is never written: the
 # Apps & features values are checked through -RegistryPlan. Refuses to run
 # while any windowsRICE is running, so it can never close the user's bar.
@@ -22,7 +22,7 @@ $sum, $named = $line -split '\s+', 2
 Check 'checksum file names the zip and matches it' ($named -eq $zip.Name -and $sum -eq (Get-FileHash $zip.FullName -Algorithm SHA256).Hash) $line
 $pkg = Join-Path $root 'extracted'; Expand-Archive $zip.FullName $pkg
 $names = @((Get-ChildItem -Recurse -File $pkg).Name | Sort-Object)
-$allowed = @('INSTALL.txt', 'install.ps1', 'uninstall.ps1', 'windowsrice-panel.exe', 'windowsrice.ico') | Sort-Object
+$allowed = @('INSTALL.txt', 'LICENSE.txt', 'THIRD-PARTY-NOTICES.txt', 'install.ps1', 'uninstall.ps1', 'windowsrice-panel.exe', 'windowsrice.ico') | Sort-Object
 Check 'zip holds exactly the release files (no captures, configs or development files)' ((Compare-Object $names $allowed) -eq $null) ($names -join ', ')
 $exePkg = Join-Path $pkg 'windowsrice-panel.exe'
 $v = (Get-Item $exePkg).VersionInfo
@@ -31,6 +31,10 @@ $icons = [WPV.Shell]::ExtractIconExW($exePkg, -1, $null, $null, 0)
 Check 'executable has the application icon' ($icons -ge 1) "icons: $icons"
 $icoSame = (Get-FileHash (Join-Path $pkg 'windowsrice.ico')).Hash -eq (Get-FileHash 'assets\windowsrice.ico').Hash
 Check 'icon file matches assets\windowsrice.ico' $icoSame
+$licSame = (Get-FileHash (Join-Path $pkg 'LICENSE.txt')).Hash -eq (Get-FileHash 'LICENSE').Hash
+Check 'LICENSE.txt is the project MIT license' $licSame
+$tpn = Get-Content (Join-Path $pkg 'THIRD-PARTY-NOTICES.txt') -Raw
+Check 'third-party notices cover the Windows crates' (($tpn -match 'windows-core') -and ($tpn -match 'Permission is hereby granted'))
 $user = Split-Path $env:USERPROFILE -Leaf
 $leaks = foreach ($f in Get-ChildItem -File $pkg) {
     $t = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($f.FullName)) + [Text.Encoding]::Unicode.GetString([IO.File]::ReadAllBytes($f.FullName))

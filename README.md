@@ -4,7 +4,7 @@ windowsRICE is a Rust-based desktop customization environment for Windows 11 Pro
 
 ## Status
 
-Release candidate 0.1.0-rc.1 (Phase 10), after Phase 9 (product readiness: per-module appearance, motion, packaging), Phase 8 (visual Design Studio) and Phase 7 (design changes verified on the running bar). Phases 4 to 10 are complete and uncommitted; items that need a person or other hardware (Narrator, real DPI changes, multiple monitors, real fullscreen applications) are NOT VERIFIED and listed in the phase reports. The rendering stack is Direct2D + DirectWrite + DirectComposition with a UI Automation provider (`docs/adr/ADR-0002-ui-framework.md`); the bar architecture is in `docs/adr/ADR-0003-top-bar.md`, the Design Studio in `docs/adr/ADR-0004-design-studio.md`, and live design application with the visual galleries in `docs/adr/ADR-0005-visual-design-studio.md`. While the bar runs it reserves its strip of the screen through the Windows application desktop toolbar interface, so maximised windows start below it; the reservation ends when it exits. No Windows setting, registry value or shell configuration is changed.
+Release candidate 0.1.0-rc.1 (Phase 10), after Phase 9 (product readiness: per-module appearance, motion, packaging), Phase 8 (visual Design Studio) and Phase 7 (design changes verified on the running bar). Phase 11 added the MIT license, GitHub Actions CI and release automation (`docs/releasing.md`) and a startup profile; items that need a person or other hardware (Narrator, real DPI changes, multiple monitors, real fullscreen applications) are NOT VERIFIED and listed in the phase reports. The rendering stack is Direct2D + DirectWrite + DirectComposition with a UI Automation provider (`docs/adr/ADR-0002-ui-framework.md`); the bar architecture is in `docs/adr/ADR-0003-top-bar.md`, the Design Studio in `docs/adr/ADR-0004-design-studio.md`, and live design application with the visual galleries in `docs/adr/ADR-0005-visual-design-studio.md`. While the bar runs it reserves its strip of the screen through the Windows application desktop toolbar interface, so maximised windows start below it; the reservation ends when it exits. No Windows setting, registry value or shell configuration is changed.
 
 | Component | Status | Notes |
 |---|---|---|
@@ -72,12 +72,20 @@ During development, use the verification levels in `docs/development.md` (`scrip
 
 ## Installing
 
-`scripts/package.ps1` builds the release candidate `target\dist\windowsRICE-0.1.0-rc.1-win-x64.zip` and its `.sha256` (local paths are stripped from the executable). Extract it and run `install.ps1` (per-user, no administrator rights; `-StartWithWindows` / `-NoStartWithWindows` for starting at sign-in). Upgrades keep settings and a running bar is closed first; an interrupted install is restored on the next run. `uninstall.ps1` removes only windowsRICE's own files and keeps `%APPDATA%\windowsRICE` unless `-RemoveSettings` is given and confirmed. Builds are not code-signed. `scripts/package-verify.ps1` checks the package and the installer in a sandbox. Details: `packaging/INSTALL.txt` and `docs/phase10-release-candidate.md`.
+`scripts/package.ps1` builds the release candidate `target\dist\windowsRICE-0.1.0-rc.1-win-x64.zip` and its `.sha256` (local paths are stripped from the executable). It also contains `LICENSE.txt` and `THIRD-PARTY-NOTICES.txt`. Extract it and run `install.ps1` (per-user, no administrator rights; `-StartWithWindows` / `-NoStartWithWindows` for starting at sign-in). Upgrades keep settings and a running bar is closed first; an interrupted install is restored on the next run. `uninstall.ps1` removes only windowsRICE's own files and keeps `%APPDATA%\windowsRICE` unless `-RemoveSettings` is given and confirmed. Builds are not code-signed. `scripts/package-verify.ps1` checks the package and the installer in a sandbox. Details: `packaging/INSTALL.txt` and `docs/phase10-release-candidate.md`.
 
 ## Configuration
 
 User configuration will live in `%APPDATA%\windowsRICE\config.toml`. Logs, the change journal and backups will live in `%LOCALAPPDATA%\windowsRICE`. The current build does not create these directories; the bar writes `config.toml` only when a setting is changed in its popup or applied from the Design Studio, and diagnostics only when asked to with `--stats <file>`.
 
+## Releases
+
+Pre-releases are published as GitHub Releases by the `Release` workflow when a version tag is pushed; `scripts/release.ps1` verifies everything before tagging (`docs/releasing.md`). The repository is private, so its releases are visible only to people with access. Builds are not code-signed; verify the SHA-256 published with each zip. Changes are listed in `CHANGELOG.md`.
+
+## Contributing and security
+
+See `CONTRIBUTING.md`. Report vulnerabilities privately as described in `SECURITY.md`.
+
 ## License
 
-No license has been selected yet.
+windowsRICE is licensed under the [MIT License](LICENSE), copyright (c) 2026 mazakv. It uses third-party Rust crates under their own licenses (MIT, Apache-2.0, Unicode-3.0 and others, used under MIT where a choice is offered); their texts are in `packaging/THIRD-PARTY-NOTICES.txt`, which ships in the release zip.

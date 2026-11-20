@@ -1,0 +1,87 @@
+# Continuous integration for windowsRICE (Windows only: the application is
+# native Windows). Pull requests run with a read-only token and no secrets.
+name: CI
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: never
+  CARGO_INCREMENTAL: '0'
+
+jobs:
+  verify:
+    name: Build, test and verify (Windows x64)
+    runs-on: windows-2025
+    timeout-minutes: 120
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Rust toolchain (from rust-toolchain.toml)
+        shell: pwsh
+        run: |
+          rustup show active-toolchain
+          rustc --version; cargo --version
+
+      - name: Cache Cargo registry and build output
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: ci-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'Cargo.lock') }}
+          restore-keys: ci-${{ runner.os }}-
+
+      - name: Format, Clippy, workspace tests, release build
+        shell: pwsh
+        run: ./scripts/check.ps1 full
+
+      - name: Debug build
+        shell: pwsh
+        run: cargo build --workspace --locked
+
+      - name: Third-party notices are current
+        shell: pwsh
+        run: ./scripts/third-party-notices.ps1 -Check
+
+      - name: Application checks (Design Studio, UI Automation, end-to-end Apply, Phase 4/5)
+        shell: pwsh
+        run: ./scripts/app-tests.ps1
+
+      - name: Package and installer verification
+        shell: powershell
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package.ps1
+          if ($LASTEXITCODE) { exit 1 }
+          powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-verify.ps1
+          if ($LASTEXITCODE) { exit 1 }
+
+      - name: Keep check results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: check-results
+          if-no-files-found: ignore
+          retention-days: 14
+          path: |
+            target/phase8/e2e/checks.json
+            target/phase6/verify/checks.json
+            target/phase5/a11y/checks.json
+            target/phase45-verify/checks.json
+            target/pkgtest/checks.json

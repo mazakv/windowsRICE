@@ -36,3 +36,7 @@ Uninstall
 Notes
   This build is not code-signed, so Windows SmartScreen may warn the first
   time you run it. windowsRICE works offline and sends no data anywhere.
+
+License
+  windowsRICE is MIT-licensed (LICENSE.txt). Third-party license texts are
+  in THIRD-PARTY-NOTICES.txt.

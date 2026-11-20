@@ -2,6 +2,7 @@
 name = "windowsrice-core"
 description = "windowsRICE core: configuration, paths, logging, hotkey model and capability model"
 version.workspace = true
+license.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true

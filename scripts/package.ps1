@@ -1,7 +1,8 @@
 # Builds the release and creates the distributable zip:
 #   target\dist\windowsRICE-<version>-win-x64.zip (+ .sha256)
 # The zip holds windowsrice-panel.exe (with icon and version information),
-# install.ps1, uninstall.ps1, windowsrice.ico and INSTALL.txt. Nothing is
+# install.ps1, uninstall.ps1, windowsrice.ico, INSTALL.txt, LICENSE.txt and
+# THIRD-PARTY-NOTICES.txt. Nothing is
 # signed, uploaded or published.
 #
 # The package build uses its own target folder (target\package) and strips
@@ -32,6 +33,8 @@ if (-not $NoBuild) {
     Remove-Item Env:RUSTFLAGS, Env:CARGO_TARGET_DIR
     if ($code -ne 0) { throw 'release build failed' }
 }
+& (Join-Path $PSScriptRoot 'third-party-notices.ps1') -Check
+if ($LASTEXITCODE -ne 0) { throw 'third-party notices are out of date' }
 $exe = Join-Path $targetDir 'release\windowsrice-panel.exe'
 if (-not (Test-Path $exe)) { throw "no package build at $exe (run without -NoBuild)" }
 $version = (Get-Item $exe).VersionInfo.ProductVersion
@@ -48,6 +51,8 @@ New-Item -ItemType Directory -Force $stage | Out-Null
 Copy-Item $exe $stage
 Copy-Item 'packaging\install.ps1', 'packaging\uninstall.ps1', 'packaging\INSTALL.txt' $stage
 Copy-Item 'assets\windowsrice.ico' $stage
+Copy-Item 'LICENSE' (Join-Path $stage 'LICENSE.txt')
+Copy-Item 'packaging\THIRD-PARTY-NOTICES.txt' $stage
 $zip = Join-Path $dist "$name-win-x64.zip"
 if (Test-Path $zip) { Remove-Item -Force $zip }
 Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip

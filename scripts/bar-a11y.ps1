@@ -40,6 +40,13 @@ public static RECT Work() { var mi = new MONITORINFO(); mi.cbSize = Marshal.Size
 public static RECT WindowRect(IntPtr h) { RECT r; GetWindowRect(h, out r); return r; }
 '@
 [void][WB.Win]::SetProcessDpiAwarenessContext([IntPtr](-4))
+
+# Primary monitor geometry (physical pixels) and scale, so the checks work on
+# any screen (CI runners included), not only the 3840 px / 150 % original.
+Add-Type -Namespace WScr -Name S -MemberDefinition '[DllImport("user32.dll")] public static extern int GetSystemMetrics(int i); [DllImport("user32.dll")] public static extern uint GetDpiForSystem();'
+$ScreenW = [WScr.S]::GetSystemMetrics(0)
+$Scale = [WScr.S]::GetDpiForSystem() / 96.0
+function Px([double]$dip) { [int][math]::Round($dip * $Scale) }
 # The bar can be translucent, so whatever is behind it shows through. A
 # pinned test backdrop (scripts/backdrop-window.ps1) stays behind it for the
 # whole run, and no screenshot is taken unless that backdrop is in place.
@@ -95,7 +102,7 @@ Start-Sleep -Seconds 3
 $wr = [WB.Win]::WindowRect($bar)
 $mon = New-Object WB.Win+MONITORINFO; $mon.cbSize = [Runtime.InteropServices.Marshal]::SizeOf($mon)
 $work = [WB.Win]::Work()
-Check 'full width, top edge' (($wr.Left -eq 0) -and ($wr.Top -eq 0) -and ($wr.Right -eq 3840)) "$($wr.Left),$($wr.Top),$($wr.Right),$($wr.Bottom)"
+Check 'full width, top edge' (($wr.Left -eq 0) -and ($wr.Top -eq 0) -and ($wr.Right -eq $ScreenW)) "$($wr.Left),$($wr.Top),$($wr.Right),$($wr.Bottom)"
 Check 'work area starts below the bar' ($work.Top -eq $wr.Bottom) "work top $($work.Top) (before $($workBefore.Top)), bar bottom $($wr.Bottom)"
 $root = $A::FromHandle($bar)
 $all = $root.FindAll($TS::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
@@ -118,7 +125,7 @@ $outside = @($all | Where-Object { $r = $_.Current.BoundingRectangle; ($r.Left -
 Check 'all bounds inside the bar' ($outside.Count -eq 0)
 $mr = $menu.Current.BoundingRectangle
 Check 'hit testing returns the menu' (($A::FromPoint((New-Object System.Windows.Point(($mr.Left + 4), ($mr.Top + 4))))).Current.AutomationId -eq 'module.menu')
-Shot 'bar-full.png' 0 0 3840 ($wr.Bottom + 6)
+Shot 'bar-full.png' 0 0 $ScreenW ($wr.Bottom + 6)
 
 [WBEvents]::Start($root)
 (ById $root 'module.cpu').SetFocus(); Start-Sleep -Milliseconds 500
@@ -177,13 +184,13 @@ $glass = ById $proot 'theme:windowsrice-glass'
 $glass.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select(); Start-Sleep -Milliseconds 1200
 $proot = $A::FromHandle($pop)
 Check 'theme Glass selected and saved' (((Config-Text) -match 'active = "windowsrice-glass"') -and (ById $proot 'theme:windowsrice-glass').GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Current.IsSelected)
-Shot 'bar-glass.png' 0 0 3840 70
+Shot 'bar-glass.png' 0 0 $ScreenW (Px 47)
 $pr = [WB.Win]::WindowRect($pop); Shot 'popup-glass.png' $pr.Left $pr.Top ($pr.Right - $pr.Left) ($pr.Bottom - $pr.Top)
-# height (Glass bar token is 36): +2 -> 38 DIPs = 57 px at 150 %
+# height (Glass bar token is 36): +2 -> 38 DIPs (57 px at 150 %)
 Invoke-Id $proot 'bar:height+'
 Start-Sleep -Milliseconds 500
 $wr2 = [WB.Win]::WindowRect($bar); $work2 = [WB.Win]::Work()
-Check 'height +: bar 57 px and work area follows' (($wr2.Bottom -eq 57) -and ($work2.Top -eq 57)) "bar bottom $($wr2.Bottom), work top $($work2.Top)"
+Check 'height +: bar 38 DIPs and work area follows' (($wr2.Bottom -eq (Px 38)) -and ($work2.Top -eq (Px 38))) "bar bottom $($wr2.Bottom), work top $($work2.Top)"
 Check 'height saved' ((Config-Text) -match '(?m)^height = 38')
 # reserve off and on
 Toggle-Id $proot 'bar:reserve'
@@ -192,7 +199,7 @@ $work3 = [WB.Win]::Work()
 Check 'reserve off: work area released' ($work3.Top -eq $workBefore.Top) "work top $($work3.Top)"
 Toggle-Id $proot 'bar:reserve'
 Start-Sleep -Milliseconds 500
-Check 'reserve on: work area taken again' (([WB.Win]::Work()).Top -eq 57) "work top $(([WB.Win]::Work()).Top)"
+Check 'reserve on: work area taken again' (([WB.Win]::Work()).Top -eq (Px 38)) "work top $(([WB.Win]::Work()).Top)"
 # auto-hide: collapse after the delay (pointer not over the bar), expand on pointer
 Toggle-Id $proot 'bar:autohide'
 Invoke-Id $proot 'close'
@@ -215,7 +222,7 @@ if ($cur.Y -le ($barRect.Bottom + 2) -and $cur.X -ge $barRect.Left -and $cur.X -
 [void][WB.Win]::PostMessageW($bar, 0x0200, [IntPtr]::Zero, [IntPtr](100 -bor (1 -shl 16)))   # WM_MOUSEMOVE at the top edge
 Start-Sleep -Milliseconds 400
 $we = [WB.Win]::WindowRect($bar)
-Check 'auto-hide: pointer at the top edge expands it' (($we.Bottom - $we.Top) -eq 57) "height $($we.Bottom - $we.Top)"
+Check 'auto-hide: pointer at the top edge expands it' (($we.Bottom - $we.Top) -eq (Px 38)) "height $($we.Bottom - $we.Top)"
 # exit from the popup (auto-hide back off first, so the next run starts reserved)
 Invoke-Id $root 'module.menu'
 $pop = Wait-Window 'windowsRICE.Popup'; Start-Sleep -Milliseconds 500
@@ -236,7 +243,7 @@ $stats2 = Join-Path $Out 'run2.json'
 $p2 = Start-Bar @('--exit-after', '6', '--stats', $stats2)
 $bar2 = Wait-Window 'windowsRICE.Panel'; Start-Sleep -Seconds 3
 $root2 = $A::FromHandle($bar2); $wr = [WB.Win]::WindowRect($bar2)
-Check 'restart: CPU still hidden, height 38 kept' (($null -eq (ById $root2 'module.cpu')) -and ($wr.Bottom -eq 57)) "bottom $($wr.Bottom)"
+Check 'restart: CPU still hidden, height 38 kept' (($null -eq (ById $root2 'module.cpu')) -and ($wr.Bottom -eq (Px 38))) "bottom $($wr.Bottom)"
 $null = $p2.WaitForExit(20000)
 $j2 = Get-Content $stats2 -Raw | ConvertFrom-Json
 Check 'restart: Glass theme applied' ($j2.theme.id -eq 'windowsrice-glass') $j2.theme.id

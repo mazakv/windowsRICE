@@ -7,8 +7,8 @@ version = "0.1.0-rc.1"
 edition = "2024"
 rust-version = "1.100"
 publish = false
-# No license has been selected yet. Do not add a `license` field until the
-# project owner chooses one.
+license = "MIT"
+repository = "https://github.com/mazakv/windowsRICE"
 
 [workspace.dependencies]
 windowsrice-core = { path = "crates/windowsrice-core" }

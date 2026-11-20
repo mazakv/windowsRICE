@@ -7,7 +7,7 @@
 #      diagnostics and releases the reserved work area. SIMULATED: the key
 #      press is posted, not typed.
 #   3. Real overflow: a configuration with long custom-text modules on the
-#      real 3840 px monitor; modules must be hidden and named.
+#      real monitor (full width); modules must be hidden and named.
 #   4. Light, Dark and Glass over black, white and colourful backdrops: the
 #      backdrop is a topmost window of this script under the bar (the
 #      wallpaper is never changed); text contrast is measured on the
@@ -23,6 +23,13 @@ $ErrorActionPreference = 'Stop'
 Set-Location $ProjectRoot
 New-Item -ItemType Directory -Force $Out | Out-Null
 Add-Type -AssemblyName System.Drawing
+
+# Primary monitor geometry (physical pixels) and scale, so the checks work on
+# any screen (CI runners included), not only the 3840 px / 150 % original.
+Add-Type -Namespace WScr -Name S -MemberDefinition '[DllImport("user32.dll")] public static extern int GetSystemMetrics(int i); [DllImport("user32.dll")] public static extern uint GetDpiForSystem();'
+$ScreenW = [WScr.S]::GetSystemMetrics(0)
+$Scale = [WScr.S]::GetDpiForSystem() / 96.0
+function Px([double]$dip) { [int][math]::Round($dip * $Scale) }
 Add-Type -Namespace WV -Name Win -MemberDefinition @'
 [DllImport("user32.dll")] public static extern bool PostMessageW(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern IntPtr FindWindowW(string cls, string title);
@@ -80,7 +87,7 @@ $mods = "schema_version = 3`n[bar]`n[[bar.modules]]`nid = `"menu`"`nkind = `"men
 foreach ($n in 1..14) { $mods += "[[bar.modules]]`nid = `"note-$n`"`nkind = `"custom_text`"`nregion = `"right`"`ntext = `"Overflow sample module number $n here`"`n" }
 $p = Bar 'overflow' @('--exit-after', '7') $mods
 $null = Wait-Bar; Start-Sleep -Seconds 3
-Assert-Backdrop; & $shot (Join-Path $Out 'overflow-real.png') 0 0 3840 55 1
+Assert-Backdrop; & $shot (Join-Path $Out 'overflow-real.png') 0 0 $ScreenW (Px 36.7) 1
 $null = $p.WaitForExit(20000)
 $j = Stats 'overflow'
 Check 'overflow on the real monitor: modules hidden and named, tree lint clean' ((@($j.hidden_modules).Count -gt 0) -and (@($j.a11y_problems).Count -eq 0) -and (@($j.errors).Count -eq 0)) "hidden=$($j.hidden_modules -join ',')"
@@ -105,8 +112,8 @@ foreach ($bd in 'black', 'white', 'colour') {
         $p = Bar $tag (@('--exit-after', '6') + $t.args)
         $null = Wait-Bar; Start-Sleep -Seconds 3
         $png = Join-Path $Out "$tag.png"
-        $hpx = [int][math]::Round($t.h * 1.5)
-        Assert-Backdrop; & $shot $png 0 0 3840 ($hpx + 30) 1
+        $hpx = Px $t.h
+        Assert-Backdrop; & $shot $png 0 0 $ScreenW ($hpx + 30) 1
         $null = $p.WaitForExit(20000)
         $j = Stats $tag
         $bmp = [System.Drawing.Bitmap]::FromFile($png)
@@ -114,9 +121,10 @@ foreach ($bd in 'black', 'white', 'colour') {
         # Sample inside the title module above its text (since Phase 7 the gaps
         # between modules are see-through) and in the empty
         # middle of the bar, plus the backdrop below the bar.
-        $chip = $bmp.GetPixel(230, 9)
-        $gap = $bmp.GetPixel(1200, $y)
-        $below = $bmp.GetPixel(1200, $hpx + 15)
+        $chip = $bmp.GetPixel((Px 153), (Px 6))
+        $midX = [int]($ScreenW * 0.3125)   # empty middle of the bar (1200 px of 3840)
+        $gap = $bmp.GetPixel($midX, $y)
+        $below = $bmp.GetPixel($midX, $hpx + 15)
         $bmp.Dispose()
         $textHex = if ($t.text) { $t.text } elseif ($j.theme.mode -eq 'Light') { '#1A1C20' } else { '#E8EAED' }
         $text = [System.Drawing.ColorTranslator]::FromHtml($textHex)
@@ -136,6 +144,8 @@ foreach ($r in $rows) {
 }
 $checks | Format-Table -AutoSize -Wrap | Out-String -Width 220
 $checks | ConvertTo-Json | Set-Content (Join-Path $Out 'checks.json') -Encoding utf8
-"{0} checks, {1} failed" -f $checks.Count, @($checks | Where-Object { -not $_.pass }).Count
+$failed = @($checks | Where-Object { -not $_.pass }).Count
+"{0} checks, {1} failed" -f $checks.Count, $failed
 
 Stop-Process -Id $guardProc.Id -Force -ErrorAction SilentlyContinue
+exit [int]($failed -gt 0)
