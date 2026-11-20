@@ -33,7 +33,10 @@ jobs:
 
       - name: Rust toolchain (from rust-toolchain.toml)
         shell: pwsh
+        # rust-toolchain.toml asks for "stable"; runner images can carry an
+        # older stable than the minimum (rust-version 1.100), so update it.
         run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy --no-self-update
           rustup show active-toolchain
           rustc --version; cargo --version
 

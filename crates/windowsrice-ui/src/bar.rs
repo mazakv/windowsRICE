@@ -674,6 +674,11 @@ pub fn build_bar(
             ..style.surface
         })
     };
+    // The opaque bar colours behind the modules.
+    let bar_bgs: Vec<Color> = match &d.gradient {
+        Some((_, colors)) if colors.len() >= 2 => colors.iter().map(|c| under(*c)).collect(),
+        _ => vec![under(style.surface)],
+    };
     let module_fill = d.module_background.unwrap_or_else(|| {
         Color {
             a: 0x1A,
@@ -747,29 +752,43 @@ pub fn build_bar(
                 owner,
             });
         }
-        let bg = if l.look.background.is_some() {
-            tile
-        } else if chip && d.module_opacity >= 0.99 {
-            module_fill
+        // What is actually under the module's text: its own background,
+        // the tile composited at its opacity over the bar, or the bar (the
+        // gradient stops when a gradient replaces the bar colour).
+        let tile_alpha = (d.module_opacity.clamp(0.0, 1.0) * 255.0).round() as u8;
+        let unders: Vec<Color> = if l.look.background.is_some() {
+            vec![tile]
+        } else if chip {
+            bar_bgs
+                .iter()
+                .map(|b| {
+                    Color {
+                        a: tile_alpha,
+                        ..module_fill
+                    }
+                    .over(*b)
+                })
+                .collect()
         } else {
-            under(style.surface)
+            bar_bgs.clone()
         };
-        // Manual colours stay readable on what is actually under them
+        let bg = unders[0];
+        // Every colour stays readable on what is actually under it
         // (Phase 12): 3:1 for icons, 4.5:1 for text.
-        let fit_icon = |c: Color| crate::style::readable(c, &[bg], 3.0);
-        let fit_text = |c: Color| crate::style::readable(c, &[bg], 4.5);
+        let fit_icon = |c: Color| crate::style::readable(c, &unders, 3.0);
+        let fit_text = |c: Color| crate::style::readable(c, &unders, 4.5);
         let icon_color = if !v.available {
             style.text_disabled
         } else if let Some(c) = l.look.color {
             fit_icon(c)
         } else {
-            match d.icon_tint {
+            fit_icon(match d.icon_tint {
                 IconTint::Text => style.text_primary,
                 IconTint::Secondary => style.text_secondary,
                 IconTint::Accent => ensure_contrast(style.accent, style.text_primary, bg, 3.0),
                 IconTint::Colorful => colorful(v.kind, style, bg),
-                IconTint::Custom => d.icon_color.map_or(style.text_primary, fit_icon),
-            }
+                IconTint::Custom => d.icon_color.unwrap_or(style.text_primary),
+            })
         };
         let content_w: f32 = l.widths.iter().sum::<f32>()
             + inner
@@ -810,6 +829,7 @@ pub fn build_bar(
                     } else {
                         style.text_primary
                     };
+                    let color = if v.available { fit_text(color) } else { color };
                     draw.push(DrawCmd::Text {
                         rect: Rect::new(px, l.rect.y, *pw, l.rect.h),
                         text: text.clone(),

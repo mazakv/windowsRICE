@@ -204,5 +204,11 @@ fn module_tiles_count_as_text_surfaces() {
         ..Default::default()
     };
     let sf = text_surfaces(Color::rgb(0, 0, 0), &s);
-    assert_eq!(sf.len(), 2);
+    assert_eq!(
+        sf.len(),
+        1,
+        "tiles are fitted when drawn, not a bar surface"
+    );
+    let tile = windowsrice_ui::style::tile_surface(Color::rgb(0, 0, 0), &s).unwrap();
+    assert_eq!(tile, Color::rgb(255, 255, 255));
 }

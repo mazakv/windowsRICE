@@ -97,7 +97,9 @@ fn s(v: &str) -> Option<String> {
 
 // ------------------------------------------------------------------ styles
 
-pub const STYLES: [Item; 15] = [
+/// Templates (Phase 12): complete designs, each with its theme, colours,
+/// typography, module tiles, spacing, icons, effects and module layout.
+pub const STYLES: [Item; 26] = [
     item(
         "Minimal",
         "미니멀",
@@ -182,6 +184,73 @@ pub const STYLES: [Item; 15] = [
         "고대비",
         "Maximum contrast and a thick border",
         "최대 대비와 두꺼운 테두리",
+    ),
+    // ---- Phase 12 templates
+    item(
+        "Dark Glass",
+        "다크 글래스",
+        "Smoked glass with frosted tiles",
+        "연기 낀 유리와 서리 낀 타일",
+    ),
+    item(
+        "Paper Light",
+        "페이퍼 라이트",
+        "Warm white, ink-dark text, no tiles",
+        "따뜻한 흰색과 진한 잉크색 글자",
+    ),
+    item(
+        "Aurora",
+        "오로라",
+        "Teal-to-violet sky with soft pills",
+        "청록에서 보라로 이어지는 하늘과 둥근 알약",
+    ),
+    item(
+        "Neon Night",
+        "네온 나이트",
+        "Black bar, magenta and cyan glow",
+        "검은 바에 마젠타와 시안 빛",
+    ),
+    item(
+        "Gaming",
+        "게이밍",
+        "Hardware readings up front, red accents",
+        "하드웨어 수치를 앞에, 붉은 강조",
+    ),
+    item(
+        "Productivity",
+        "생산성",
+        "Window title, clock and system load",
+        "창 제목, 시계, 시스템 부하",
+    ),
+    item(
+        "Sunset Gradient",
+        "선셋 그라데이션",
+        "Coral to plum, white text",
+        "코랄에서 자두색으로, 흰 글자",
+    ),
+    item(
+        "Cyber Terminal",
+        "사이버 터미널",
+        "Monospace green on black, square tiles",
+        "검은 바탕의 초록 고정폭 글자",
+    ),
+    item(
+        "Elegant",
+        "엘레강트",
+        "Deep plum, gold clock, serif type",
+        "짙은 자두색, 금색 시계, 세리프 글꼴",
+    ),
+    item(
+        "Ocean Breeze",
+        "오션 브리즈",
+        "Light sea blue with white pills",
+        "밝은 바다색과 흰 알약",
+    ),
+    item(
+        "Forest",
+        "포레스트",
+        "Moss gradient with leaf-green icons",
+        "이끼색 그라데이션과 잎사귀 초록 아이콘",
     ),
 ];
 
@@ -301,13 +370,183 @@ fn style_for(
             spacing = 6;
             ("windowsrice-pastel", Light)
         }
-        _ => {
+        14 => {
             st.material = Material::Solid;
             st.border_bottom = true;
             st.border_width = Some(2);
             st.font_weight = Some(500);
             st.content = ModuleContent::Full;
             ("windowsrice-high-contrast", Dark)
+        }
+        // ---- Phase 12 templates
+        15 => {
+            // Dark Glass
+            st.material = Material::Translucent;
+            st.opacity = Some(0.72);
+            st.module_shape = ModuleShape::Rounded;
+            st.module_background = s("#2A2D36");
+            st.module_opacity = Some(55);
+            st.highlight = Some(22);
+            st.shadow = Some(30);
+            st.icon_tint = IconTint::Secondary;
+            ("windowsrice-glass", Dark)
+        }
+        16 => {
+            // Paper Light
+            st.material = Material::Solid;
+            st.background = s("#FAF7F0");
+            st.text = s("#2B2620");
+            st.text_secondary = s("#5E564B");
+            st.accent = s("#8A4B12");
+            st.module_shape = ModuleShape::None;
+            st.separators = true;
+            st.separator_color = s("#D9D1C3");
+            st.border_bottom = true;
+            st.border_color = s("#E4DCCD");
+            st.font_family = s("Segoe UI Variable");
+            st.content = ModuleContent::Full;
+            ("windowsrice-light", Light)
+        }
+        17 => {
+            // Aurora
+            st.material = Material::Solid;
+            st.gradient = Some(Gradient {
+                direction: GradientDirection::Horizontal,
+                colors: vec!["#0E3B43".into(), "#1B2D5A".into(), "#3A1E5C".into()],
+            });
+            st.module_shape = ModuleShape::Pill;
+            st.module_background = s("#FFFFFF");
+            st.module_opacity = Some(14);
+            st.icon_tint = IconTint::Colorful;
+            st.clock_color = s("#B8F5E6");
+            height = Some(36);
+            spacing = 6;
+            ("windowsrice-ambient", Dark)
+        }
+        18 => {
+            // Neon Night
+            st.material = Material::Solid;
+            st.background = s("#07060B");
+            st.accent = s("#FF3DCB");
+            st.icon_tint = IconTint::Accent;
+            st.clock_color = s("#4DF2FF");
+            st.accent_line = AccentLine::Bottom;
+            st.module_shape = ModuleShape::Rounded;
+            st.module_background = s("#16121F");
+            st.highlight = Some(35);
+            st.font_weight = Some(500);
+            ("windowsrice-neon", Dark)
+        }
+        19 => {
+            // Gaming
+            st.material = Material::Solid;
+            st.gradient = Some(Gradient {
+                direction: GradientDirection::Horizontal,
+                colors: vec!["#120607".into(), "#1E0A0C".into(), "#120607".into()],
+            });
+            st.accent = s("#FF4655");
+            st.icon_tint = IconTint::Accent;
+            st.module_shape = ModuleShape::Square;
+            st.module_background = s("#2A1013");
+            st.module_opacity = Some(90);
+            st.font_family = s("Bahnschrift");
+            st.font_weight = Some(600);
+            st.content = ModuleContent::Full;
+            height = Some(34);
+            ("windowsrice-amoled", Dark)
+        }
+        20 => {
+            // Productivity
+            st.material = Material::Solid;
+            st.module_shape = ModuleShape::Rounded;
+            st.module_opacity = Some(70);
+            st.content = ModuleContent::Full;
+            st.separators = false;
+            st.icon_tint = IconTint::Accent;
+            st.region_gap = Some(24);
+            ("windowsrice-default", Auto)
+        }
+        21 => {
+            // Sunset Gradient
+            st.material = Material::Solid;
+            st.gradient = Some(Gradient {
+                direction: GradientDirection::Horizontal,
+                colors: vec!["#8C2F39".into(), "#6A2453".into(), "#3E1F57".into()],
+            });
+            st.text = s("#FFFFFF");
+            st.text_secondary = s("#F6E3EC");
+            st.icon_tint = IconTint::Text;
+            st.clock_color = s("#FFE3C2");
+            st.module_shape = ModuleShape::Pill;
+            st.module_background = s("#000000");
+            st.module_opacity = Some(18);
+            height = Some(36);
+            ("windowsrice-warm", Dark)
+        }
+        22 => {
+            // Cyber Terminal
+            st.material = Material::Solid;
+            st.background = s("#030805");
+            st.text = s("#7CFF9B");
+            st.text_secondary = s("#4FC46C");
+            st.accent = s("#7CFF9B");
+            st.icon_tint = IconTint::Text;
+            st.font_family = s("Consolas");
+            st.module_shape = ModuleShape::Square;
+            st.module_background = s("#0B1A10");
+            st.border_bottom = true;
+            st.border_color = s("#1F5C31");
+            st.content = ModuleContent::Full;
+            ("windowsrice-hypr", Dark)
+        }
+        23 => {
+            // Elegant
+            st.material = Material::Solid;
+            st.background = s("#1F1426");
+            st.text = s("#F2E9F5");
+            st.text_secondary = s("#CBB8D3");
+            st.accent = s("#D9B36C");
+            st.clock_color = s("#E7C988");
+            st.clock_size = Some(15);
+            st.font_family = s("Sitka Text");
+            st.icon_tint = IconTint::Accent;
+            st.module_shape = ModuleShape::None;
+            st.separators = true;
+            st.separator_color = s("#3D2B48");
+            st.density = Density::Expanded;
+            height = Some(38);
+            ("windowsrice-midnight", Dark)
+        }
+        24 => {
+            // Ocean Breeze
+            st.material = Material::Solid;
+            st.background = s("#DCEEF7");
+            st.text = s("#0F2F43");
+            st.text_secondary = s("#2E5368");
+            st.accent = s("#0B6E99");
+            st.module_shape = ModuleShape::Pill;
+            st.module_background = s("#FFFFFF");
+            st.module_opacity = Some(85);
+            st.icon_tint = IconTint::Accent;
+            height = Some(36);
+            spacing = 6;
+            ("windowsrice-ocean", Light)
+        }
+        _ => {
+            // Forest
+            st.material = Material::Solid;
+            st.gradient = Some(Gradient {
+                direction: GradientDirection::Vertical,
+                colors: vec!["#1C2B1E".into(), "#121D14".into()],
+            });
+            st.text = s("#EAF2E3");
+            st.text_secondary = s("#B9CBB0");
+            st.accent = s("#8BD17C");
+            st.icon_tint = IconTint::Accent;
+            st.module_shape = ModuleShape::Rounded;
+            st.module_background = s("#263A29");
+            st.module_opacity = Some(80);
+            ("windowsrice-default", Dark)
         }
     };
     (theme.0, theme.1, st, height, spacing)
@@ -971,6 +1210,7 @@ pub fn apply(g: Gallery, i: usize, d: &mut Draft, c: &Ctx) -> bool {
             d.bar.style = style;
             d.bar.height = height;
             d.bar.spacing = spacing;
+            d.bar.modules = template_modules(&d.bar.modules, style_layout(i));
         }
         Gallery::Palette => {
             let [bg, mbg, accent, text, text2] = palette_colors(i);
@@ -1153,6 +1393,127 @@ pub fn is_selected(g: Gallery, i: usize, d: &Draft, c: &Ctx) -> bool {
     }
 }
 
+/// Module layout of each template, as (module id, region) in display order.
+/// Modules not listed stay in the configuration, turned off, so they can be
+/// turned on again.
+pub fn style_layout(i: usize) -> &'static [(&'static str, Region)] {
+    use Region::{Center as C, Left as L, Right as R};
+    const STANDARD: &[(&str, Region)] = &[
+        ("menu", L),
+        ("active-window", L),
+        ("clock", C),
+        ("download", R),
+        ("upload", R),
+        ("network", R),
+        ("volume", R),
+        ("cpu", R),
+        ("gpu", R),
+        ("vram", R),
+        ("ram", R),
+        ("battery", R),
+        ("notifications", R),
+    ];
+    const MINIMAL: &[(&str, Region)] = &[
+        ("menu", L),
+        ("clock", C),
+        ("volume", R),
+        ("notifications", R),
+    ];
+    const COMPACT: &[(&str, Region)] = &[
+        ("menu", L),
+        ("active-window", L),
+        ("clock", R),
+        ("network", R),
+        ("volume", R),
+        ("battery", R),
+        ("notifications", R),
+    ];
+    const FOCUS: &[(&str, Region)] = &[
+        ("menu", L),
+        ("clock", L),
+        ("active-window", C),
+        ("cpu", R),
+        ("ram", R),
+        ("network", R),
+        ("volume", R),
+        ("notifications", R),
+    ];
+    const GAMING: &[(&str, Region)] = &[
+        ("menu", L),
+        ("cpu", L),
+        ("gpu", L),
+        ("vram", L),
+        ("ram", L),
+        ("clock", C),
+        ("download", R),
+        ("upload", R),
+        ("volume", R),
+        ("notifications", R),
+    ];
+    const CALM: &[(&str, Region)] = &[
+        ("menu", L),
+        ("active-window", L),
+        ("clock", C),
+        ("network", R),
+        ("volume", R),
+        ("battery", R),
+        ("notifications", R),
+    ];
+    const TERMINAL: &[(&str, Region)] = &[
+        ("menu", L),
+        ("active-window", L),
+        ("cpu", R),
+        ("ram", R),
+        ("download", R),
+        ("upload", R),
+        ("clock", R),
+        ("notifications", R),
+    ];
+    match i {
+        0 => MINIMAL,
+        9 => COMPACT,
+        12 | 16 | 23 => CALM,
+        13 | 17 | 21 | 24 => CALM,
+        19 => GAMING,
+        20 => FOCUS,
+        22 => TERMINAL,
+        _ => STANDARD,
+    }
+}
+
+/// The modules after applying a template layout to `current`: the listed
+/// modules are turned on in that order and region, the other built-in
+/// modules are turned off, and modules the user added (extra custom text
+/// and icon modules) stay as they are. Each module keeps its own settings
+/// (text, colours, refresh interval); a listed module missing from
+/// `current` is added with its defaults.
+pub fn template_modules(
+    current: &[windowsrice_core::bar::ModuleConfig],
+    layout: &[(&str, Region)],
+) -> Vec<windowsrice_core::bar::ModuleConfig> {
+    let defaults = windowsrice_core::bar::default_modules();
+    let mut rest: Vec<_> = current.to_vec();
+    let mut out = Vec::with_capacity(rest.len() + layout.len());
+    for (id, region) in layout {
+        let m = match rest.iter().position(|m| m.id == *id) {
+            Some(i) => Some(rest.remove(i)),
+            None => defaults.iter().find(|m| m.id == *id).cloned(),
+        };
+        if let Some(mut m) = m {
+            m.region = *region;
+            m.enabled = true;
+            out.push(m);
+        }
+    }
+    for mut m in rest {
+        if defaults.iter().any(|d| d.id == m.id) {
+            m.enabled = false;
+        }
+        out.push(m);
+    }
+    out
+}
+
 /// The theme and mode a style card uses (for its preview).
 pub fn style_theme(i: usize) -> (&'static str, ThemeModePreference) {
     let (t, m, ..) = style_for(i);
@@ -1233,19 +1594,51 @@ mod tests {
     }
 
     #[test]
-    fn styles_change_the_look_but_not_the_modules() {
+    fn templates_set_the_layout_and_keep_module_settings() {
+        // Phase 12: a template is a complete design, including the module
+        // layout; each module keeps its own settings and modules the user
+        // added are kept.
         let c = ctx();
-        let base = draft();
+        let mut base = draft();
+        let cpu = base.bar.modules.iter_mut().find(|m| m.id == "cpu").unwrap();
+        cpu.color = Some("#3DA5F4".into());
+        cpu.interval_ms = Some(5000);
+        let mut extra = windowsrice_core::bar::ModuleConfig::new(
+            "text-2",
+            ModuleKind::CustomText,
+            Region::Left,
+            true,
+        );
+        extra.text = Some("Hello".into());
+        base.bar.modules.push(extra.clone());
+        assert!(STYLES.len() >= 24, "at least 24 templates");
         for i in 0..STYLES.len() {
             let mut d = base.clone();
             assert!(
                 apply(Gallery::Style, i, &mut d, &c),
-                "style {i} changes something"
+                "template {i} changes something"
             );
-            assert_eq!(
-                d.bar.modules, base.bar.modules,
-                "style {i} kept the modules"
+            let on: Vec<(&str, Region)> = d
+                .bar
+                .modules
+                .iter()
+                .filter(|m| m.enabled && m.id != "text-2")
+                .map(|m| (m.id.as_str(), m.region))
+                .collect();
+            assert_eq!(on, style_layout(i).to_vec(), "template {i} layout");
+            let cpu = d.bar.modules.iter().find(|m| m.id == "cpu").unwrap();
+            assert_eq!(cpu.color.as_deref(), Some("#3DA5F4"), "template {i}");
+            assert_eq!(cpu.interval_ms, Some(5000), "template {i}");
+            assert!(
+                d.bar.modules.contains(&extra),
+                "template {i} kept the user's module"
             );
+            let cfg = windowsrice_core::config::Config {
+                bar: d.bar.clone(),
+                theme: d.theme.clone(),
+                ..Default::default()
+            };
+            assert!(cfg.validate().is_ok(), "template {i}: {:?}", cfg.validate());
         }
         // Every style is distinct.
         let mut seen = Vec::new();

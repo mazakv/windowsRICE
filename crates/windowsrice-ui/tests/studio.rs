@@ -246,7 +246,7 @@ fn galleries_show_real_cards_and_mark_the_selection() {
         h: 1300.0,
     };
     for (section, gal, n) in [
-        (Section::Styles, Gallery::Style, 15),
+        (Section::Styles, Gallery::Style, catalog::STYLES.len()),
         (Section::Layout, Gallery::Layout, 9),
         (Section::Effects, Gallery::Effect, 11),
         (Section::Icons, Gallery::Icons, 6),
@@ -430,7 +430,8 @@ fn scrolling_reports_its_range_and_keeps_offscreen_cards_out_of_the_tree() {
     let s = scene(&m, MIN_SIZE, Lang::En);
     assert!(
         s.scroll_max > 100.0,
-        "15 style cards do not fit: {}",
+        "{} template cards do not fit: {}",
+        catalog::STYLES.len(),
         s.scroll_max
     );
     let grid = s.grids.iter().find(|g| g.prefix == "card:style").unwrap();
@@ -440,7 +441,7 @@ fn scrolling_reports_its_range_and_keeps_offscreen_cards_out_of_the_tree() {
         !s.scene
             .tree
             .iter()
-            .any(|e| e.automation_id == "card:style:14"),
+            .any(|e| e.automation_id == format!("card:style:{}", catalog::STYLES.len() - 1)),
         "off-screen card left out"
     );
     let mut m2 = model(Section::Styles);
@@ -450,7 +451,7 @@ fn scrolling_reports_its_range_and_keeps_offscreen_cards_out_of_the_tree() {
         s2.scene
             .tree
             .iter()
-            .any(|e| e.automation_id == "card:style:14"),
+            .any(|e| e.automation_id == format!("card:style:{}", catalog::STYLES.len() - 1)),
         "scrolled into view"
     );
 }

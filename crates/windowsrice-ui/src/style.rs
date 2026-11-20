@@ -292,7 +292,7 @@ pub fn design_contrast(
         .iter()
         .flat_map(|g| g.colors.iter().filter_map(|c| col(c)))
         .collect();
-    let mut surfaces = if stops.len() >= 2 {
+    let surfaces = if stops.len() >= 2 {
         stops
             .iter()
             .enumerate()
@@ -301,11 +301,6 @@ pub fn design_contrast(
     } else {
         vec![("background".to_owned(), opaque(p.surface_base))]
     };
-    if s.module_shape != windowsrice_core::bar::ModuleShape::None
-        && let Some(c) = s.module_background.as_deref().and_then(col)
-    {
-        surfaces.push(("module background".to_owned(), c));
-    }
     let mut texts = vec![
         ("text".to_owned(), p.text_primary),
         ("secondary text".to_owned(), p.text_secondary),
@@ -373,9 +368,9 @@ pub fn opaque_text_contrast(t: &ResolvedTheme) -> f64 {
     contrast_ratio(p.text_primary, surface).min(contrast_ratio(p.text_secondary, surface))
 }
 
-/// The opaque surfaces text can be drawn on: the bar background (or, when
-/// a gradient of two or more colours replaces it, every gradient colour)
-/// and, when modules have tiles, the module background.
+/// The opaque bar surfaces text can be drawn on: the bar background or,
+/// when a gradient of two or more colours replaces it, every gradient
+/// colour. Text inside module tiles is fitted to its tile when drawn.
 pub fn text_surfaces(base: Color, s: &windowsrice_core::bar::BarStyle) -> Vec<Color> {
     use windowsrice_core::bar::parse_hex_color;
     let col = |h: &str| parse_hex_color(h).map(|(r, g, b)| Color::rgb(r, g, b));
@@ -384,17 +379,29 @@ pub fn text_surfaces(base: Color, s: &windowsrice_core::bar::BarStyle) -> Vec<Co
         .iter()
         .flat_map(|g| g.colors.iter().filter_map(|c| col(c)))
         .collect();
-    let mut out = if stops.len() >= 2 {
+    if stops.len() >= 2 {
         stops
     } else {
         vec![Color { a: 255, ..base }]
-    };
-    if s.module_shape != windowsrice_core::bar::ModuleShape::None
-        && let Some(c) = s.module_background.as_deref().and_then(col)
-    {
-        out.push(c);
     }
-    out
+}
+
+/// The module tile as drawn: the module background at the module opacity
+/// over the bar background, when modules have tiles and a background.
+pub fn tile_surface(base: Color, s: &windowsrice_core::bar::BarStyle) -> Option<Color> {
+    use windowsrice_core::bar::parse_hex_color;
+    if s.module_shape == windowsrice_core::bar::ModuleShape::None {
+        return None;
+    }
+    let (r, g, b) = s.module_background.as_deref().and_then(parse_hex_color)?;
+    let a = (f32::from(s.module_opacity.unwrap_or(100)) / 100.0 * 255.0).round() as u8;
+    Some(
+        Color {
+            a,
+            ..Color::rgb(r, g, b)
+        }
+        .over(Color { a: 255, ..base }),
+    )
 }
 
 /// Lowest contrast of `c` (composited over each surface) on `surfaces`.
@@ -462,6 +469,16 @@ pub fn readability_fixes(
     let primary = raw(&s.text, t.palette.text_primary);
     if min_contrast(primary, &surfaces) + 1e-9 < 4.5 {
         out.push(("text", primary, fixed.palette.text_primary));
+    }
+    if let Some(tile) = tile_surface(fixed.palette.surface_base, s) {
+        let tx = fixed.palette.text_primary;
+        let r = readable(tx, &[tile], 4.5);
+        if r != (Color {
+            a: 255,
+            ..tx.over(tile)
+        }) {
+            out.push(("text on module tiles", tx, r));
+        }
     }
     for (role, v, need) in [
         ("secondary text", &s.text_secondary, 4.5),
