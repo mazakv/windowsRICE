@@ -519,13 +519,14 @@ pub(super) fn styles(u: &mut Ui, g: ElementId, r: Rect) {
         u,
         g,
         r,
-        t(lang, "Design styles", "디자인 스타일"),
+        t(lang, "Templates", "템플릿"),
         t(
             lang,
-            "Complete looks: theme, colours, background, type, icons and effects together. Modules stay as they are. Customise anything afterwards.",
-            "테마, 색, 배경, 글꼴, 아이콘, 효과를 한 번에 바꾸는 완성된 디자인입니다. 모듈은 그대로 둡니다. 고른 뒤 무엇이든 다듬을 수 있습니다.",
+            "Complete designs to start from: theme, colours, type, module tiles, icons, effects and module layout together. Each module keeps its own settings; Undo returns to your design. Customise anything afterwards, or start from scratch.",
+            "시작점이 되는 완성된 디자인입니다: 테마, 색, 글꼴, 모듈 타일, 아이콘, 효과, 모듈 배치를 한 번에 바꿉니다. 각 모듈의 설정은 유지되며 실행 취소로 되돌릴 수 있습니다. 고른 뒤 무엇이든 다듬거나 처음부터 만드세요.",
         ),
     );
+    let y = creator_row(u, g, r, y, false);
     catalog_grid(u, g, r.x, y, r.w, Gallery::Style, 270.0);
 }
 

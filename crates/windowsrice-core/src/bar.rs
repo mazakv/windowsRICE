@@ -550,6 +550,23 @@ pub struct BarStyle {
     /// Clock text size, DIPs (11–22).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub clock_size: Option<u16>,
+    /// Colour animations (Phase 12–14): animated text, rainbow text,
+    /// accent, icons, clock or background gradient.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub animations: Vec<crate::motion::ColorAnimation>,
+    /// Background image or video from the design library (Phase 14): the
+    /// library's generated asset id, never a path.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub background_asset: Option<String>,
+}
+
+/// A design-library asset id: 1–64 lowercase letters, digits and `-`.
+pub fn is_valid_asset_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= 64
+        && id
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
 }
 
 /// Parses `#RRGGBB`.
@@ -759,6 +776,17 @@ impl BarConfig {
         }
         if self.spacing > 24 {
             p.push(format!("bar.spacing = {} is outside 0-24", self.spacing));
+        }
+        p.extend(crate::motion::animation_problems(
+            &self.style.animations,
+            "bar.style.animations",
+        ));
+        if let Some(id) = &self.style.background_asset
+            && !is_valid_asset_id(id)
+        {
+            p.push(format!(
+                "bar.style.background_asset = {id:?} is not a design-library asset id"
+            ));
         }
         if !(200..=5000).contains(&self.auto_hide_delay_ms) {
             p.push(format!(

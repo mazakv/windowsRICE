@@ -56,13 +56,15 @@ pub enum Section {
     Layout,
     Effects,
     Presets,
+    /// Import RICE Design Code or a .ricepack (Phase 12).
+    Import,
     Advanced,
 }
 
 impl Section {
     /// Every page reachable from the navigation. `Home` (before Phase 12)
     /// is no longer listed: Templates is the starting page.
-    pub const ALL: [Section; 11] = [
+    pub const ALL: [Section; 12] = [
         Section::Styles,
         Section::Themes,
         Section::Colors,
@@ -73,6 +75,7 @@ impl Section {
         Section::Layout,
         Section::Effects,
         Section::Presets,
+        Section::Import,
         Section::Advanced,
     ];
     pub fn name(self, lang: Lang) -> &'static str {
@@ -88,6 +91,7 @@ impl Section {
             Section::Layout => ("Layout", "레이아웃"),
             Section::Effects => ("Effects", "효과"),
             Section::Presets => ("My designs", "내 디자인"),
+            Section::Import => ("Import design code", "디자인 코드 가져오기"),
             Section::Advanced => ("Advanced", "고급"),
         };
         if lang == Lang::En { en } else { ko }
@@ -105,6 +109,7 @@ impl Section {
             Section::Layout => "\u{E80A}",
             Section::Effects => "\u{E706}",
             Section::Presets => "\u{E74E}",
+            Section::Import => "\u{E8B5}",
             Section::Advanced => "\u{E713}",
         }
     }
@@ -121,6 +126,7 @@ impl Section {
             Section::Layout => "layout",
             Section::Effects => "effects",
             Section::Presets => "presets",
+            Section::Import => "import",
             Section::Advanced => "advanced",
         }
     }
@@ -149,6 +155,10 @@ impl Section {
             Section::Presets => (
                 "Save and share complete designs",
                 "완성된 디자인 저장과 공유",
+            ),
+            Section::Import => (
+                "Check and import shared designs",
+                "공유된 디자인 검사 및 가져오기",
             ),
             Section::Advanced => ("Screen space, monitors, reset", "화면 공간, 모니터, 재설정"),
         };
@@ -189,7 +199,7 @@ impl Group {
                 Section::Icons,
             ],
             Group::Motion => &[Section::Effects],
-            Group::MyDesigns => &[Section::Presets],
+            Group::MyDesigns => &[Section::Presets, Section::Import],
             Group::Advanced => &[Section::Advanced],
         }
     }
@@ -607,6 +617,43 @@ pub fn apply_theme_card(d: &mut Draft, id: &str, mode: ThemeModePreference) -> b
     s.gradient = None;
     *d != before
 }
+/// State of the Import design code page (Phase 12).
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct ImportView {
+    /// The design code being checked.
+    pub text: String,
+    /// Where it came from ("Pasted code", a file name).
+    pub source: String,
+    /// The code came from a `.ricepack` (its assets were checked).
+    pub package: bool,
+    pub analyzed: bool,
+    pub diagnostics: Vec<windowsrice_core::design_code::Diagnostic>,
+    /// (check, status) in display order.
+    pub checks: Vec<(String, ImportCheck)>,
+    pub can_apply: bool,
+    pub selected: Option<usize>,
+    /// Name of the analysed design.
+    pub name: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ImportCheck {
+    Passed,
+    Failed,
+    NotRun,
+    /// The check could not be performed here (for example no antivirus).
+    Unavailable,
+}
+
+impl ImportView {
+    /// The line (1-based) of the selected problem, if it has one.
+    pub fn selected_line(&self) -> Option<u32> {
+        self.selected
+            .and_then(|i| self.diagnostics.get(i))
+            .and_then(|d| d.line)
+    }
+}
+
 /// What the Studio edits. Applying writes it to `config.toml`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Draft {
@@ -860,6 +907,8 @@ pub struct StudioModel {
     pub theme_defaults: ThemeDefaults,
     // ---- Phase 9
     pub font_filter: FontFilter,
+    /// Import design code page (Phase 12).
+    pub import: ImportView,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -928,6 +977,22 @@ pub enum StudioAction {
     DeletePreset,
     ImportPreset,
     ExportPreset,
+    /// Import design code page (Phase 12).
+    ImportPaste,
+    ImportOpen,
+    ImportAnalyze,
+    ImportSelect(usize),
+    ImportPreview,
+    ImportSave,
+    ImportClear,
+    /// Scan the opened package with Microsoft Defender, when available.
+    ImportScan,
+    /// Copy the current design as RICE Design Code.
+    CopyDesignCode,
+    /// Export the current design as a .ricepack.
+    ExportPackage,
+    /// Start a design from scratch (Phase 12).
+    CreateCustom,
     ToggleReserve,
     ToggleAutoHide,
     AutoHideDelayDown,
@@ -2190,6 +2255,7 @@ fn build_once(
         Section::Layout => gallery::layout(&mut u, body, content),
         Section::Effects => gallery::effects(&mut u, body, content),
         Section::Presets => presets(&mut u, body, content),
+        Section::Import => import_page(&mut u, body, content),
         Section::Advanced => gallery::advanced(&mut u, body, content),
     }
     u.clip = None;
@@ -2708,6 +2774,366 @@ fn modules(u: &mut Ui, g: ElementId, r: Rect) {
     }
 }
 
+/// Buttons shown on Templates and My designs: start from scratch, import.
+fn creator_row(u: &mut Ui, g: ElementId, r: Rect, y: f32, with_export: bool) -> f32 {
+    let lang = u.lang;
+    let mut items: Vec<(&str, &str, &str, StudioAction, Kind)> = vec![
+        (
+            "creator:new",
+            "\u{E710}",
+            t(lang, "Create custom design", "새 디자인 만들기"),
+            StudioAction::CreateCustom,
+            Kind::Primary,
+        ),
+        (
+            "creator:import",
+            "\u{E8B5}",
+            t(lang, "Import design code", "디자인 코드 가져오기"),
+            StudioAction::Nav(Section::Import),
+            Kind::Secondary,
+        ),
+    ];
+    if with_export {
+        items.push((
+            "creator:copy",
+            "\u{E8C8}",
+            t(lang, "Copy design code", "디자인 코드 복사"),
+            StudioAction::CopyDesignCode,
+            Kind::Secondary,
+        ));
+        items.push((
+            "creator:export",
+            "\u{EDE1}",
+            t(lang, "Export .ricepack…", ".ricepack 내보내기…"),
+            StudioAction::ExportPackage,
+            Kind::Secondary,
+        ));
+    }
+    let n = items.len() as f32;
+    let bw = ((r.w - 8.0 * (n - 1.0)) / n).min(230.0);
+    for (i, (key, glyph, label, a, kind)) in items.into_iter().enumerate() {
+        u.button(
+            g,
+            key,
+            Rect::new(r.x + i as f32 * (bw + 8.0), y, bw, 34.0),
+            Some(glyph),
+            label,
+            label,
+            kind,
+            true,
+            a,
+        );
+    }
+    y + 46.0
+}
+
+fn import_page(u: &mut Ui, g: ElementId, r: Rect) {
+    use windowsrice_core::design_code::Severity as Sev;
+    let lang = u.lang;
+    let m = u.m;
+    let iv = &m.import;
+    let mut y = section_title(
+        u,
+        g,
+        r,
+        t(lang, "Import design code", "디자인 코드 가져오기"),
+        t(
+            lang,
+            "Paste RICE Design Code or open a .ricepack, then Analyze. Design code is data only: it is checked and never run. Checks cannot prove that a file is free of malware; windowsRICE accepts only settings, PNG and JPEG images and MP4 videos.",
+            "RICE 디자인 코드를 붙여 넣거나 .ricepack을 연 뒤 분석하세요. 디자인 코드는 데이터일 뿐이며 검사만 하고 실행하지 않습니다. 검사로 파일에 악성 코드가 없음을 증명할 수는 없으며, windowsRICE는 설정, PNG/JPEG 이미지, MP4 동영상만 받습니다.",
+        ),
+    );
+    let has_text = !iv.text.trim().is_empty();
+    let row: [(&str, &str, &str, bool, StudioAction, Kind); 5] = [
+        (
+            "import:paste",
+            "\u{E77F}",
+            t(lang, "Paste code", "코드 붙여넣기"),
+            true,
+            StudioAction::ImportPaste,
+            Kind::Secondary,
+        ),
+        (
+            "import:open",
+            "\u{E8E5}",
+            t(lang, "Open file…", "파일 열기…"),
+            true,
+            StudioAction::ImportOpen,
+            Kind::Secondary,
+        ),
+        (
+            "import:analyze",
+            "\u{E721}",
+            t(lang, "Analyze", "분석"),
+            has_text,
+            StudioAction::ImportAnalyze,
+            Kind::Primary,
+        ),
+        (
+            "import:scan",
+            "\u{E83D}",
+            t(lang, "Defender scan", "Defender 검사"),
+            iv.package,
+            StudioAction::ImportScan,
+            Kind::Secondary,
+        ),
+        (
+            "import:clear",
+            "\u{E894}",
+            t(lang, "Clear", "지우기"),
+            has_text,
+            StudioAction::ImportClear,
+            Kind::Secondary,
+        ),
+    ];
+    let bw = ((r.w - 4.0 * 8.0) / 5.0).min(170.0);
+    for (i, (key, glyph, label, enabled, a, kind)) in row.into_iter().enumerate() {
+        u.button(
+            g,
+            key,
+            Rect::new(r.x + i as f32 * (bw + 8.0), y, bw, 34.0),
+            Some(glyph),
+            label,
+            label,
+            kind,
+            enabled,
+            a,
+        );
+    }
+    y += 46.0;
+    let lines: Vec<&str> = iv.text.lines().collect();
+    let source = if has_text {
+        match lang {
+            Lang::En => format!("{} · {} lines", iv.source, lines.len()),
+            Lang::Ko => format!("{} · {}줄", iv.source, lines.len()),
+        }
+    } else {
+        t(
+            lang,
+            "Nothing to check yet.",
+            "아직 검사할 내용이 없습니다.",
+        )
+        .to_owned()
+    };
+    u.label(
+        g,
+        "import:source",
+        Rect::new(r.x, y, r.w, 22.0),
+        &source,
+        12.0,
+        400,
+        u.s.text2,
+    );
+    y += 28.0;
+
+    // Results: one line per check, then the problems.
+    if iv.analyzed {
+        let summary = match (lang, iv.can_apply) {
+            (Lang::En, true) => format!(
+                "Ready: no errors{}. Preview it, then save or apply.",
+                match iv
+                    .diagnostics
+                    .iter()
+                    .filter(|d| d.severity == Sev::Warning)
+                    .count()
+                {
+                    0 => String::new(),
+                    n => format!(", {n} warning(s)"),
+                }
+            ),
+            (Lang::En, false) => format!(
+                "{} error(s) must be fixed before this design can be used.",
+                iv.diagnostics
+                    .iter()
+                    .filter(|d| d.severity == Sev::Error)
+                    .count()
+            ),
+            (Lang::Ko, true) => {
+                "준비됨: 오류가 없습니다. 미리 본 뒤 저장하거나 적용하세요.".to_owned()
+            }
+            (Lang::Ko, false) => format!(
+                "이 디자인을 사용하려면 오류 {}개를 고쳐야 합니다.",
+                iv.diagnostics
+                    .iter()
+                    .filter(|d| d.severity == Sev::Error)
+                    .count()
+            ),
+        };
+        let col = if iv.can_apply {
+            u.s.success
+        } else {
+            u.s.danger
+        };
+        u.label(
+            g,
+            "import:summary",
+            Rect::new(r.x, y, r.w, 24.0),
+            &summary,
+            13.0,
+            600,
+            col,
+        );
+        y += 30.0;
+        let cw = (r.w - 8.0) / 2.0;
+        for (i, (name, st)) in iv.checks.iter().enumerate() {
+            let (word, col) = match st {
+                ImportCheck::Passed => (t(lang, "passed", "통과"), u.s.success),
+                ImportCheck::Failed => (t(lang, "failed", "실패"), u.s.danger),
+                ImportCheck::NotRun => (t(lang, "not checked", "검사 안 함"), u.s.text2),
+                ImportCheck::Unavailable => (t(lang, "unavailable", "사용할 수 없음"), u.s.warning),
+            };
+            let x = r.x + (i % 2) as f32 * (cw + 8.0);
+            let label = format!("{name}: {word}");
+            u.label(
+                g,
+                &format!("import:check{i}"),
+                Rect::new(x, y, cw, 22.0),
+                &label,
+                12.0,
+                400,
+                col,
+            );
+            if i % 2 == 1 || i + 1 == iv.checks.len() {
+                y += 24.0;
+            }
+        }
+        y += 6.0;
+        for (i, d) in iv.diagnostics.iter().enumerate().take(40) {
+            let sev = match (d.severity, lang) {
+                (Sev::Error, Lang::En) => "Error",
+                (Sev::Warning, Lang::En) => "Warning",
+                (Sev::Info, Lang::En) => "Note",
+                (Sev::Error, Lang::Ko) => "오류",
+                (Sev::Warning, Lang::Ko) => "경고",
+                (Sev::Info, Lang::Ko) => "참고",
+            };
+            let at = match (d.line, d.column, lang) {
+                (Some(l), Some(c), Lang::En) => format!(" · line {l}, column {c}"),
+                (Some(l), Some(c), Lang::Ko) => format!(" · {l}행 {c}열"),
+                _ => String::new(),
+            };
+            let place = if d.path.is_empty() {
+                String::new()
+            } else {
+                format!(" · {}", d.path)
+            };
+            let fix = d
+                .suggestion
+                .as_deref()
+                .map_or(String::new(), |s| match lang {
+                    Lang::En => format!(" Fix: {s}"),
+                    Lang::Ko => format!(" 해결: {s}"),
+                });
+            let label = format!(
+                "{sev}{at}{place}: {}.{fix}",
+                d.message.trim_end_matches('.')
+            );
+            u.radio(
+                g,
+                &format!("import:diag:{i}"),
+                Rect::new(r.x, y, r.w, 44.0),
+                &label,
+                iv.selected == Some(i),
+                StudioAction::ImportSelect(i),
+            );
+            y += 48.0;
+        }
+    }
+
+    // Line editor for the selected problem.
+    if let Some(line) = iv.selected_line() {
+        let label = match lang {
+            Lang::En => format!("Line {line} (edit, press Enter, then Analyze)"),
+            Lang::Ko => format!("{line}행 (수정 후 Enter, 그다음 분석)"),
+        };
+        let current = lines.get(line as usize - 1).copied().unwrap_or("");
+        u.field(
+            g,
+            "field:import-line",
+            Rect::new(r.x, y, r.w, 32.0),
+            &label,
+            current,
+            "",
+        );
+        y += 42.0;
+    }
+
+    // The code, with line numbers; the selected problem's line is marked.
+    if has_text {
+        let mark = iv.selected_line().unwrap_or(0) as usize;
+        let first = mark.saturating_sub(8).max(1);
+        let shown = 24usize;
+        let lh = 18.0;
+        let box_h = (lines.len().saturating_sub(first - 1).min(shown)) as f32 * lh + 12.0;
+        let code = u.group(
+            g,
+            "import:code",
+            t(lang, "Design code", "디자인 코드"),
+            Rect::new(r.x, y, r.w, box_h),
+        );
+        u.fill(Rect::new(r.x, y, r.w, box_h), 8.0, u.s.panel, code);
+        let mut ly = y + 6.0;
+        for (n, text) in lines.iter().enumerate().skip(first - 1).take(shown) {
+            let no = n + 1;
+            if no == mark {
+                u.fill(
+                    Rect::new(r.x + 2.0, ly, r.w - 4.0, lh),
+                    4.0,
+                    Color {
+                        a: 0x40,
+                        ..u.s.danger
+                    },
+                    code,
+                );
+            }
+            let s = format!("{no:>4}  {}", text.chars().take(160).collect::<String>());
+            u.text(
+                Rect::new(r.x + 8.0, ly, r.w - 16.0, lh),
+                &s,
+                u.ts(12.0, 400),
+                u.s.text,
+                code,
+            );
+            ly += lh;
+        }
+        y += box_h + 12.0;
+    }
+
+    // Use the design.
+    let half = ((r.w - 8.0) / 2.0).min(260.0);
+    u.button(
+        g,
+        "import:preview",
+        Rect::new(r.x, y, half, 36.0),
+        Some("\u{E7B3}"),
+        t(lang, "Preview in Studio", "스튜디오에서 미리 보기"),
+        t(
+            lang,
+            "Load the design into the draft (Undo returns; Apply uses it)",
+            "디자인을 초안으로 불러오기 (실행 취소 가능, 적용해야 사용)",
+        ),
+        Kind::Primary,
+        iv.can_apply,
+        StudioAction::ImportPreview,
+    );
+    u.button(
+        g,
+        "import:save",
+        Rect::new(r.x + half + 8.0, y, half, 36.0),
+        Some("\u{E74E}"),
+        t(lang, "Save to My designs", "내 디자인에 저장"),
+        t(
+            lang,
+            "Save the design to My designs",
+            "디자인을 내 디자인에 저장",
+        ),
+        Kind::Secondary,
+        iv.can_apply,
+        StudioAction::ImportSave,
+    );
+    u.content_bottom = u.content_bottom.max(y + 48.0);
+}
+
 fn presets(u: &mut Ui, g: ElementId, r: Rect) {
     let lang = u.lang;
     let m = u.m;
@@ -2722,6 +3148,7 @@ fn presets(u: &mut Ui, g: ElementId, r: Rect) {
             "프리셋은 테마와 모든 바 설정을 저장합니다. 불러오면 초안이 바뀌며, 적용해야 사용됩니다.",
         ),
     );
+    y = creator_row(u, g, r, y, true);
     if m.presets.is_empty() {
         u.label(
             g,

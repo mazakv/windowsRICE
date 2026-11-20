@@ -131,6 +131,12 @@ function Bar-Shot([string]$name) {
 # Scrolls the Studio section until an element is in the tree.
 function Reveal([string]$id) {
     $sh2 = [WSV.W]::FindWindowW('windowsRICE.Studio', [NullString]::Value)
+    $e = ById (Root $sh2) $id; if ($e) { return $e }
+    # Back to the top first (the element may be above the visible part).
+    $r = New-Object WSV.W+RECT; [void][WSV.W]::GetWindowRect($sh2, [ref]$r)
+    $x = [int](($r.L + $r.R) / 2) - 200; $y = [int](($r.T + $r.B) / 2) + 200
+    for ($k = 0; $k -lt 40; $k++) { [void][WSV.W]::PostMessageW($sh2, 0x020A, [IntPtr]([int](120 -band 0xFFFF) -shl 16), [IntPtr](($y -shl 16) -bor ($x -band 0xFFFF))) }
+    Start-Sleep -Milliseconds 600
     for ($k = 0; $k -lt 30; $k++) {
         $e = ById (Root $sh2) $id; if ($e) { return $e }
         $r = New-Object WSV.W+RECT; [void][WSV.W]::GetWindowRect($sh2, [ref]$r)
@@ -288,6 +294,73 @@ Select-Id (Root $sh) 'nav:presets'; $s = Root $sh
 Key 0x0D; Chr 'A'; Chr 'b'; Key 0x24; Chr 'X'; Key 0x23; Key 0x25; Key 0x2E; Key 0x0D
 $pv = (ById (Root $sh) 'field:preset-name').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
 Check 'text field: typing, Home, End, Left and Delete edit at the caret' ($pv -eq 'XA') $pv
+
+
+# ---- Phase 12: create, export and import designs (RICE Design Code, .ricepack)
+# The user's clipboard is saved first and restored afterwards.
+Add-Type -AssemblyName System.Windows.Forms
+# Elements are scrolled into view first (the page can be longer than the window).
+function Press([string]$id) { $e = Reveal $id; if (-not $e) { throw "no element $id" }; $e.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 500 }
+function NameOf([string]$id) { $e = Reveal $id; if ($e) { $e.Current.Name } else { '' } }
+$savedClip = $null
+try { if ([System.Windows.Forms.Clipboard]::ContainsText()) { $savedClip = [System.Windows.Forms.Clipboard]::GetText() } } catch {}
+Select-Id (Root $sh) 'nav:presets'; $s = Root $sh
+Press 'creator:copy'
+$code = [System.Windows.Forms.Clipboard]::GetText()
+Check 'Copy design code puts RICE Design Code on the clipboard' (($code -match '"format": "rice-design"') -and ($code -match '"top_bar"')) ($code.Length)
+# Paste code with a misspelt field: located error with a suggestion.
+$bad = $code -replace '"spacing"', '"spacingg"'
+[System.Windows.Forms.Clipboard]::SetText($bad)
+Select-Id (Root $sh) 'nav:import'; $s = Root $sh
+Press 'import:paste'; $s = Root $sh
+Press 'import:analyze'; $s = Root $sh
+$d0 = Reveal 'import:diag:0'
+$sum = (NameOf 'import:summary')
+Check 'Analyze reports the unknown field with its line and a fix' ($d0 -and $d0.Current.Name -match 'spacingg' -and $d0.Current.Name -match 'line \d+, column \d+' -and $d0.Current.Name -match 'Fix:') $(if ($d0) { $d0.Current.Name } else { $sum })
+Check 'a design with errors cannot be used' ($sum -match 'error') $sum
+# Fix it in the line editor and analyse again.
+$le = Reveal 'field:import-line'
+$fixed = ($le.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value) -replace 'spacingg', 'spacing'
+Set-Id $s 'field:import-line' $fixed; $s = Root $sh
+Press 'import:analyze'; $s = Root $sh
+$sum = (NameOf 'import:summary')
+Check 'fixing the line in the editor makes the design usable' ($sum -match '^Ready') $sum
+$c0 = (NameOf 'import:check0'); $c2 = (NameOf 'import:check2'); $c4 = (NameOf 'import:check4')
+Check 'checks are stated plainly (syntax, executable content, antivirus not run)' (($c0 -eq 'Syntax: passed') -and ($c2 -eq 'No executable content accepted: passed') -and ($c4 -eq 'Antivirus scan: not checked')) "$c0 | $c2 | $c4"
+# Script content is refused.
+[System.Windows.Forms.Clipboard]::SetText(($code -replace '"windowsRICE"', '"<script>alert(1)</script>"'))
+Press 'import:paste'; Press 'import:analyze'; $s = Root $sh
+$c2 = (NameOf 'import:check2')
+Check 'script content is refused (no executable content accepted: failed)' ($c2 -eq 'No executable content accepted: failed') $c2
+# Preview the fixed design (it becomes the draft; Undo returns).
+[System.Windows.Forms.Clipboard]::SetText(($code -replace '"name": "[^"]*"', '"name": "Imported test"'))
+Press 'import:paste'; Press 'import:analyze'
+$pv = Reveal 'import:preview'
+$pv.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 500
+Check 'Preview loads the imported design into the draft' ((Status (Root $sh)) -match 'Previewing "Imported test"') (Status (Root $sh))
+(Reveal 'import:save').GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 500
+Check 'Save to My designs stores it as a preset' ((Test-Path (Join-Path $Out 'presets')) -and @(Get-ChildItem (Join-Path $Out 'presets') -Filter '*.toml' | Where-Object { (Get-Content $_.FullName -Raw) -match 'Imported test' }).Count -eq 1)
+Invoke-Id (Root $sh) 'undo'
+# Export a .ricepack and open it again through the Import page.
+$pack = Join-Path $Out 'export-test.ricepack'
+if (Test-Path $pack) { Remove-Item $pack -Force }
+Select-Id (Root $sh) 'nav:presets'
+Press 'creator:export'
+$okExp = File-Dialog $p.Id $pack
+Check 'Export .ricepack writes a package' ($okExp -and (Test-Path $pack) -and ([IO.File]::ReadAllBytes($pack)[0..1] -join ',') -eq '80,75') $script:dlgDebug
+Select-Id (Root $sh) 'nav:import'
+Press 'import:open'
+$okOpen = File-Dialog $p.Id $pack
+$s = Root $sh
+$sum = (NameOf 'import:summary')
+Check 'Open .ricepack checks the package and its design' ($okOpen -and ($sum -match '^Ready') -and ((Reveal 'import:scan').Current.IsEnabled)) $sum
+Press 'import:clear'
+# Create custom design: a blank start in Bar layout > Modules; Undo returns.
+Select-Id (Root $sh) 'nav:styles'
+Press 'creator:new'; Start-Sleep -Milliseconds 700; $s = Root $sh
+Check 'Create custom design starts from scratch in Bar layout > Modules' (((Status $s) -match '^New design') -and (Test-StudioPageSelected 'modules' { param($x) ById $s $x })) (Status $s)
+Invoke-Id (Root $sh) 'undo'
+try { if ($null -ne $savedClip) { [System.Windows.Forms.Clipboard]::SetText($savedClip) } else { [System.Windows.Forms.Clipboard]::Clear() } } catch {}
 
 # ---- Reset (confirmation), unsaved close (cancel, then discard)
 Select-Id $s 'nav:advanced'; $s = Root $sh

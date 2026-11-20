@@ -64,6 +64,16 @@ jobs:
         shell: pwsh
         run: ./scripts/third-party-notices.ps1 -Check
 
+      - name: Desktop session (screen size, DPI, session) for the application checks
+        shell: powershell
+        run: |
+          Add-Type -AssemblyName System.Windows.Forms
+          [System.Windows.Forms.Screen]::AllScreens | Format-List DeviceName, Bounds, WorkingArea, Primary
+          Add-Type -Namespace S -Name D -MemberDefinition '[DllImport("user32.dll")] public static extern uint GetDpiForSystem(); [DllImport("user32.dll")] public static extern System.IntPtr GetForegroundWindow();'
+          "System DPI: $([S.D]::GetDpiForSystem())"
+          "User interactive: $([Environment]::UserInteractive); session: $([System.Diagnostics.Process]::GetCurrentProcess().SessionId)"
+          "Foreground window: $([S.D]::GetForegroundWindow())"
+
       - name: Application checks (Design Studio, UI Automation, end-to-end Apply, Phase 4/5)
         shell: pwsh
         run: ./scripts/app-tests.ps1
@@ -84,8 +94,8 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
           path: |
-            target/phase8/e2e/checks.json
-            target/phase6/verify/checks.json
-            target/phase5/a11y/checks.json
-            target/phase45-verify/checks.json
+            target/phase8/e2e/
+            target/phase6/verify/
+            target/phase5/a11y/
+            target/phase45-verify/
             target/pkgtest/checks.json

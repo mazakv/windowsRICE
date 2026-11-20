@@ -125,6 +125,9 @@ pub enum Deferred {
     /// Native file dialogs for preset import and export.
     OpenFile,
     SaveFile(String),
+    /// Native file dialogs for design import and .ricepack export (Phase 12).
+    OpenDesign,
+    SaveDesign(String),
     /// Windows colour dialog, starting at this `COLORREF`.
     PickColor(u32),
 }
@@ -2414,6 +2417,8 @@ pub fn run_deferred(d: Deferred) {
         Deferred::Confirm(c) => crate::studio_win::run_confirm(c),
         Deferred::OpenFile => crate::studio_win::run_open_file(),
         Deferred::SaveFile(name) => crate::studio_win::run_save_file(&name),
+        Deferred::OpenDesign => crate::design_io::run_open_design(),
+        Deferred::SaveDesign(name) => crate::design_io::run_save_design(&name),
         Deferred::PickColor(c) => crate::studio_win::run_pick_color(c),
     }
 }

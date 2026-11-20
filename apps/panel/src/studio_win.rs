@@ -97,6 +97,8 @@ pub struct StudioWin {
     pub slider_drag: Option<SliderKind>,
     /// Where smooth scrolling is heading.
     pub scroll_target: Option<f32>,
+    /// Package opened on the Import page (Phase 12).
+    pub import_pkg: Option<crate::design_io::OpenPackage>,
 }
 
 /// Timer id of smooth scrolling (Studio window).
@@ -219,7 +221,7 @@ fn save_dialog(owner: HWND, title: &str, file: &str) -> Option<PathBuf> {
 }
 
 impl Controller {
-    fn lang(&self) -> Lang {
+    pub(crate) fn lang(&self) -> Lang {
         self.strings.lang
     }
 
@@ -241,6 +243,35 @@ impl Controller {
 
     fn presets_dir(&self) -> Option<PathBuf> {
         self.config_dir().map(|d| d.join("presets"))
+    }
+
+    pub(crate) fn studio_config_dir(&self) -> Option<PathBuf> {
+        self.config_dir()
+    }
+
+    pub(crate) fn studio_presets_dir(&self) -> Option<PathBuf> {
+        self.presets_dir()
+    }
+
+    pub(crate) fn studio_status(&mut self, text: String, sev: Severity) {
+        self.status(text, sev);
+    }
+
+    pub(crate) fn studio_refresh(&mut self) {
+        self.studio_refresh_lists();
+    }
+
+    pub(crate) fn studio_edit(&mut self, f: impl FnOnce(&mut Draft) -> bool) {
+        self.edit(f);
+    }
+
+    pub(crate) fn theme_catalog_ids(&self) -> Vec<String> {
+        self.theme
+            .catalog()
+            .entries()
+            .iter()
+            .map(|e| e.id().to_owned())
+            .collect()
     }
 
     fn themes_dir(&self) -> Option<PathBuf> {
@@ -495,6 +526,7 @@ impl Controller {
             preview_view: PreviewView::All,
             theme_defaults: ThemeDefaults::default(),
             font_filter: FontFilter::All,
+            import: Default::default(),
         };
         self.studio = Some(StudioWin {
             s,
@@ -506,6 +538,7 @@ impl Controller {
             settings_path,
             slider_drag: None,
             scroll_target: None,
+            import_pkg: None,
         });
         self.studio_set_dark(dark);
         // Installed families: discovered once on a background thread at
@@ -925,6 +958,9 @@ impl Controller {
     }
 
     pub fn studio_action(&mut self, a: StudioAction) -> Deferred {
+        if let Some(d) = self.design_action(&a) {
+            return d;
+        }
         self.stats
             .popup_log
             .push(format!("{:.2}s studio {a:?}", self.stats.now_s()));
@@ -1495,6 +1531,7 @@ impl Controller {
             "field:theme-accent" => te(|e| e.accent.clone()),
             "field:theme-text" => te(|e| e.text.clone()),
             "field:preset-name" => m.preset_name.clone(),
+            "field:import-line" => self.import_line_text(),
             _ => String::new(),
         }
     }
@@ -1645,6 +1682,7 @@ impl Controller {
                     st.model.preset_name = v;
                 }
             }
+            "field:import-line" => self.import_replace_line(&v),
             _ => {}
         }
     }
@@ -1657,7 +1695,12 @@ impl Controller {
         if c.is_control() {
             return;
         }
-        te.insert(&c.to_string(), 64);
+        let max = if te.key == "field:import-line" {
+            400
+        } else {
+            64
+        };
+        te.insert(&c.to_string(), max);
         self.studio_rebuild();
     }
 
@@ -1699,7 +1742,12 @@ impl Controller {
             }
             (0x56, true) => {
                 if let Some(s) = hwnd.and_then(get_clipboard) {
-                    te.insert(s.lines().next().unwrap_or(""), 64);
+                    let max = if te.key == "field:import-line" {
+                        400
+                    } else {
+                        64
+                    };
+                    te.insert(s.lines().next().unwrap_or(""), max);
                 }
             }
             _ => return false,
@@ -3025,6 +3073,16 @@ fn get_clipboard(owner: HWND) -> Option<String> {
 }
 
 /// Puts `text` on the clipboard.
+/// Clipboard text for the Import page.
+pub(crate) fn clipboard_text(owner: HWND) -> Option<String> {
+    get_clipboard(owner)
+}
+
+/// Puts text on the clipboard (Copy design code).
+pub(crate) fn clipboard_set(owner: HWND, text: &str) {
+    set_clipboard(owner, text);
+}
+
 fn set_clipboard(owner: HWND, text: &str) {
     use windows::Win32::Foundation::HANDLE;
     use windows::Win32::System::DataExchange::{

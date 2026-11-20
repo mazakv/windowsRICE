@@ -133,6 +133,7 @@ fn model(section: Section) -> StudioModel {
         preview_view: PreviewView::All,
         theme_defaults: ThemeDefaults::default(),
         font_filter: FontFilter::All,
+        import: Default::default(),
     }
 }
 
@@ -906,4 +907,67 @@ fn navigation_has_six_groups_and_the_open_group_lists_its_pages() {
     }
     assert_eq!(section_from_key("home"), Section::Styles);
     assert_eq!(section_from_key("colors"), Section::Colors);
+}
+
+#[test]
+fn import_page_shows_checks_problems_and_the_line_editor() {
+    use windowsrice_core::design_code::{AnalyzeOptions, DesignCode, analyze};
+    let code = DesignCode::new("Mine", ThemeSelection::default(), BarConfig::default())
+        .to_text()
+        .replacen("\"spacing\"", "\"spacingg\"", 1);
+    let a = analyze(&code, &AnalyzeOptions::default());
+    let mut m = model(Section::Import);
+    m.import = ImportView {
+        text: code.clone(),
+        source: "Pasted code".into(),
+        analyzed: true,
+        checks: vec![
+            ("Syntax".into(), ImportCheck::Passed),
+            ("Schema".into(), ImportCheck::Failed),
+            ("Antivirus scan".into(), ImportCheck::Unavailable),
+        ],
+        can_apply: a.can_apply(),
+        selected: Some(0),
+        diagnostics: a.diagnostics.clone(),
+        ..Default::default()
+    };
+    for lang in [Lang::En, Lang::Ko] {
+        let s = scene(&m, SIZES[0], lang);
+        let t = &s.scene.tree;
+        assert!(t.problems().is_empty(), "{:#?}", t.problems());
+        let id = |k: &str| t.iter().find(|e| e.automation_id == k);
+        let diag = id("import:diag:0").expect("the problem is listed");
+        assert_eq!(diag.selected, Some(true));
+        if lang == Lang::En {
+            assert!(diag.name.contains("spacingg"), "{}", diag.name);
+            assert!(diag.name.contains("line"), "{}", diag.name);
+            assert!(diag.name.contains("Fix:"), "{}", diag.name);
+            assert!(id("import:check1").unwrap().name.contains("failed"));
+            assert!(id("import:check2").unwrap().name.contains("unavailable"));
+        }
+        let line = m.import.selected_line().unwrap();
+        let field = id("field:import-line").expect("line editor for the selected problem");
+        assert!(
+            field.value.as_deref().unwrap_or("").contains("spacingg"),
+            "line {line}"
+        );
+        // A design with errors cannot be previewed or saved (the buttons
+        // are below the code; scroll to them).
+        let mut m2 = m.clone();
+        m2.scroll = 10_000.0;
+        let s2 = scene(&m2, SIZES[0], lang);
+        let id2 = |k: &str| s2.scene.tree.iter().find(|e| e.automation_id == k).cloned();
+        assert!(!id2("import:preview").expect("preview button").enabled);
+        assert!(!id2("import:save").expect("save button").enabled);
+        for e in t
+            .iter()
+            .filter(|e| e.invokable || e.selected.is_some() || e.value.is_some())
+        {
+            assert!(
+                s.action(e.id).is_some(),
+                "{} has no action",
+                e.automation_id
+            );
+        }
+    }
 }

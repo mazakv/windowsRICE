@@ -9,9 +9,12 @@
 pub mod bar;
 pub mod capability;
 pub mod config;
+pub mod design_code;
+pub mod design_pack;
 pub mod error;
 pub mod hotkey;
 pub mod logging;
+pub mod motion;
 pub mod paths;
 pub mod preset;
 

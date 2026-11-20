@@ -12,6 +12,7 @@
 mod appbar;
 mod args;
 mod controller;
+mod design_io;
 mod scheduler;
 mod stats;
 mod studio_win;
