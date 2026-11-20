@@ -198,9 +198,11 @@ fn readable_keeps_the_hue_when_it_can() {
 
 #[test]
 fn module_tiles_count_as_text_surfaces() {
-    let mut s = windowsrice_core::bar::BarStyle::default();
-    s.module_shape = ModuleShape::Rounded;
-    s.module_background = Some("#FFFFFF".into());
+    let s = windowsrice_core::bar::BarStyle {
+        module_shape: ModuleShape::Rounded,
+        module_background: Some("#FFFFFF".into()),
+        ..Default::default()
+    };
     let sf = text_surfaces(Color::rgb(0, 0, 0), &s);
     assert_eq!(sf.len(), 2);
 }
