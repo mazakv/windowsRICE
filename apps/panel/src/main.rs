@@ -282,6 +282,7 @@ fn fail(message: &str) -> std::process::ExitCode {
 }
 
 fn main() -> std::process::ExitCode {
+    stats::mark("main_entered");
     let raw: Vec<String> = std::env::args().skip(1).collect();
     let args = match args::Args::parse(raw.clone().into_iter()) {
         Ok(a) => a,
@@ -317,6 +318,7 @@ fn main() -> std::process::ExitCode {
         }
         return fail("another windowsRICE bar is already running");
     }
+    stats::mark("single_instance_checked");
     windowsrice_windows::display::enable_per_monitor_v2_awareness();
     // SAFETY: STA for this thread (UI Automation providers, DirectComposition).
     let com = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) }.is_ok();
@@ -356,6 +358,7 @@ fn main() -> std::process::ExitCode {
         }
     };
 
+    stats::mark("windows_registered");
     let stats_path = args.stats.clone();
     let open_studio = args.studio;
     match Controller::new(controller_hwnd, args, raw) {
@@ -367,8 +370,10 @@ fn main() -> std::process::ExitCode {
             return fail(&e);
         }
     }
-    studio_win::prefetch_fonts();
     with_ctl(Controller::render_all);
+    // After the first frame: the font list for Design Studio is built on a
+    // background thread that would otherwise compete with the first frame.
+    studio_win::prefetch_fonts();
     if open_studio {
         run_deferred(Deferred::OpenStudio);
     }

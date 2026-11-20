@@ -415,6 +415,7 @@ impl Controller {
         let service = config_path
             .as_ref()
             .map(|p| ThemeService::start_with(p, user_themes.as_deref(), mode, &mut sink));
+        crate::stats::mark("config_loaded");
         let mut notices: Vec<String> = service
             .as_ref()
             .map(|s| s.notices().iter().map(notice_text).collect())
@@ -472,7 +473,9 @@ impl Controller {
             ),
             &resolved.palette,
         );
+        crate::stats::mark("theme_resolved");
         let scheduler = Scheduler::start(hwnd, &config.bar.modules, !args.no_gpu_counter);
+        crate::stats::mark("providers_started");
         let mut c = Controller {
             hwnd,
             args,
@@ -505,8 +508,10 @@ impl Controller {
         if c.bars.is_empty() {
             return Err("no monitor is configured for a bar".into());
         }
+        crate::stats::mark("bars_synced");
         c.on_foreground(foreground::foreground_window());
         c.start_timers();
+        crate::stats::mark("controller_ready");
         Ok(c)
     }
 
@@ -693,7 +698,16 @@ impl Controller {
 
     /// Creates, updates and removes bars to match monitors and settings.
     pub fn sync_bars(&mut self, why: &str) {
-        let all = monitors::monitors();
+        // Startup milestones are recorded until the first frame.
+        let startup = self.stats.ms_process_to_first_frame.is_none();
+        let mut all = monitors::enumerate();
+        if startup {
+            crate::stats::mark("monitors_enumerated");
+        }
+        monitors::identify(&mut all);
+        if startup {
+            crate::stats::mark("monitor_identity_resolved");
+        }
         let bar_cfg = self.config().bar.clone();
         let connected: Vec<Option<&str>> = all.iter().map(|m| m.stable_id.as_deref()).collect();
         let desired: Vec<monitors::MonitorInfo> = all
@@ -760,8 +774,15 @@ impl Controller {
             None,
         )
         .map_err(|e| format!("bar window: {e}"))?;
+        let startup = self.stats.ms_process_to_first_frame.is_none();
+        if startup {
+            crate::stats::mark("bar_window_created");
+        }
         let text = TextSystem::new(font_config(&self.style, self.strings.lang))
             .map_err(|e| format!("DirectWrite: {e}"))?;
+        if startup {
+            crate::stats::mark("text_system_ready");
+        }
         let placeholder = Scene {
             tree: windowsrice_ui::UiTree::new(windowsrice_ui::tree::Element::new(
                 ElementId(1),
@@ -775,6 +796,9 @@ impl Controller {
             scale: 1.0,
         };
         let s = Surface::new(hwnd, text, "windowsRICE.Bar", placeholder)?;
+        if startup {
+            crate::stats::mark("graphics_device_ready");
+        }
         let dark = self.theme.applied().is_some_and(|t| t.mode == Mode::Dark);
         window::apply_dwm(hwnd, Backdrop::None, dark, false);
         self.bars.push(BarWin {
@@ -794,6 +818,9 @@ impl Controller {
             self.bars[i].device
         ));
         self.layout_bar(i, why);
+        if startup {
+            crate::stats::mark("initial_layout_built");
+        }
         Ok(())
     }
 
@@ -849,9 +876,15 @@ impl Controller {
                     b.appbar
                 ));
             }
+            if self.stats.ms_process_to_first_frame.is_none() {
+                crate::stats::mark("appbar_registered");
+            }
             if b.appbar {
                 let granted = appbar::set_pos(b.s.hwnd, monitor, rect.height());
                 rect = granted;
+                if self.stats.ms_process_to_first_frame.is_none() {
+                    crate::stats::mark("appbar_positioned");
+                }
             }
         } else if b.appbar {
             appbar::remove(b.s.hwnd);
@@ -875,11 +908,18 @@ impl Controller {
             rect
         };
         window::place(b.s.hwnd, shown);
+        let startup = self.stats.ms_process_to_first_frame.is_none();
+        if startup {
+            crate::stats::mark("bar_window_placed");
+        }
         if let Err(e) =
             b.s.renderer
                 .resize(rect.width().max(1) as u32, rect.height().max(1) as u32, dpi)
         {
             self.stats.errors.push(format!("resize: {e}"));
+        }
+        if startup {
+            crate::stats::mark("swap_chain_sized");
         }
         if changed {
             // SAFETY: reads the monitor's work area after the reservation.
@@ -1033,10 +1073,14 @@ impl Controller {
 
     /// Draws every surface that needs a frame.
     pub fn render_all(&mut self) {
+        let before_first = self.stats.ms_process_to_first_frame.is_none();
         self.render_studio();
         for i in 0..self.bars.len() {
             let first = !self.bars[i].s.shown_once;
             let visible = self.bars[i].s.visible && !self.bars[i].collapsed;
+            if first && self.stats.ms_process_to_first_frame.is_none() {
+                crate::stats::mark("first_draw_started");
+            }
             if self.bars[i].s.dirty
                 && (visible || first)
                 && Self::render_surface(&mut self.bars[i].s, &mut self.stats)
@@ -1045,9 +1089,14 @@ impl Controller {
                 self.bars[i].s.shown_once = true;
                 self.show_bar(i);
                 if self.stats.ms_process_to_first_frame.is_none() {
+                    crate::stats::mark("first_frame_presented");
                     self.stats.ms_process_to_first_frame = ms_since_process_start();
                 }
             }
+        }
+        if before_first && self.stats.ms_process_to_first_frame.is_some() {
+            // Deferred from startup: includes the shell's fullscreen state.
+            self.check_fullscreen();
         }
         if let Some(p) = &mut self.popup
             && p.s.dirty
@@ -1290,6 +1339,10 @@ impl Controller {
             return;
         }
         let info = foreground::window_info(h);
+        let startup = self.stats.ms_process_to_first_frame.is_none();
+        if startup {
+            crate::stats::mark("fg_window_info");
+        }
         let title = if foreground::is_shell_class(&info.class_name) {
             None
         } else if info.title.trim().is_empty() {
@@ -1300,13 +1353,22 @@ impl Controller {
         if self.fg_window != Some(h.0 as isize) {
             self.fg_window = Some(h.0 as isize);
             self.rehook_foreground_process(info.pid);
+            if startup {
+                crate::stats::mark("fg_rehooked");
+            }
         }
         let title = self.args.title.clone().or(title);
         if title != self.readings.active_window {
             self.readings.active_window = title;
             self.rebuild_all("foreground");
         }
+        if startup {
+            crate::stats::mark("fg_rebuilt");
+        }
         self.check_fullscreen();
+        if startup {
+            crate::stats::mark("fullscreen_checked");
+        }
     }
 
     pub fn on_object_event(&mut self, event: u32, hwnd: HWND, id_object: i32) {
@@ -1334,6 +1396,11 @@ impl Controller {
             return;
         }
         let fg = foreground::foreground_window().filter(|h| !self.own_window(*h));
+        // The first shell notification-state query in a process takes
+        // ~35 ms (Phase 11 startup profile). Before the first frame only the
+        // geometric test runs (it catches fullscreen games); the full check
+        // runs right after the first frame is presented.
+        let shell_query = self.stats.ms_process_to_first_frame.is_some();
         for i in 0..self.bars.len() {
             let covered = fg.is_some_and(|h| {
                 // SAFETY: read-only monitor lookup.
@@ -1342,7 +1409,7 @@ impl Controller {
                 let info = foreground::window_info(h);
                 same && !foreground::is_shell_class(&info.class_name)
                     && (foreground::covers_monitor(h, &self.bars[i].monitor.rect)
-                        || foreground::fullscreen_app_reported())
+                        || (shell_query && foreground::fullscreen_app_reported()))
             });
             match (covered, self.bars[i].yielded) {
                 (true, false) => {
@@ -2230,6 +2297,7 @@ impl Controller {
             self.stats.exit_reason = "closed".into();
         }
         if let Some(p) = &self.args.stats {
+            self.stats.startup_milestones = crate::stats::marks();
             self.stats.write(p);
         }
         // SAFETY: ends the message loop.

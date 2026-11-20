@@ -3074,6 +3074,7 @@ pub fn prefetch_fonts() {
     let _ = std::thread::Builder::new()
         .name("font-discovery".into())
         .spawn(|| {
+            crate::stats::mark("font_prefetch_started");
             let config = windowsrice_render::FontConfig {
                 family: "Segoe UI Variable".into(),
                 fallback: vec!["Malgun Gothic".into()],
@@ -3089,5 +3090,6 @@ pub fn prefetch_fonts() {
                     *c = Some(list);
                 }
             }
+            crate::stats::mark("font_prefetch_done");
         });
 }

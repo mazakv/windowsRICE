@@ -67,6 +67,13 @@ unsafe extern "system" fn collect(h: HMONITOR, _: HDC, _: *mut RECT, data: LPARA
 
 /// All monitors in enumeration order.
 pub fn monitors() -> Vec<MonitorInfo> {
+    let mut m = enumerate();
+    identify(&mut m);
+    m
+}
+
+/// The connected monitors without their stable identity (fast: GDI only).
+pub fn enumerate() -> Vec<MonitorInfo> {
     let mut handles: Vec<HMONITOR> = Vec::new();
     // SAFETY: the callback only appends to `handles`, which outlives the call.
     unsafe {
@@ -77,18 +84,18 @@ pub fn monitors() -> Vec<MonitorInfo> {
             LPARAM((&raw mut handles) as isize),
         );
     }
+    handles.into_iter().filter_map(monitor_info).collect()
+}
+
+/// Fills in each monitor's stable id and friendly name (DisplayConfig).
+pub fn identify(monitors: &mut [MonitorInfo]) {
     let ids = crate::display::monitor_identities().unwrap_or_default();
-    handles
-        .into_iter()
-        .filter_map(monitor_info)
-        .map(|mut m| {
-            if let Some((_, path, name)) = ids.iter().find(|(gdi, _, _)| *gdi == m.device_name) {
-                m.stable_id.clone_from(path);
-                m.friendly_name.clone_from(name);
-            }
-            m
-        })
-        .collect()
+    for m in monitors {
+        if let Some((_, path, name)) = ids.iter().find(|(gdi, _, _)| *gdi == m.device_name) {
+            m.stable_id.clone_from(path);
+            m.friendly_name.clone_from(name);
+        }
+    }
 }
 
 #[cfg(test)]

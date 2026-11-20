@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use serde::Serialize;
 use windows::Win32::Foundation::FILETIME;
-use windows::Win32::System::SystemInformation::GetSystemTimeAsFileTime;
+use windows::Win32::System::SystemInformation::GetSystemTimePreciseAsFileTime;
 use windows::Win32::System::Threading::{GetCurrentProcess, GetProcessTimes};
 
 use crate::window::ProcessCounters;
@@ -21,6 +21,8 @@ pub struct Stats {
     pub warnings: Vec<String>,
     pub ms_process_to_window: Option<f64>,
     pub ms_process_to_first_frame: Option<f64>,
+    /// Startup milestones: name and milliseconds since process creation.
+    pub startup_milestones: Vec<(&'static str, f64)>,
     /// Seconds since start for every presented frame.
     pub frames: Vec<f64>,
     pub frame_reasons: Vec<&'static str>,
@@ -82,7 +84,8 @@ fn ft(t: FILETIME) -> u64 {
     (u64::from(t.dwHighDateTime) << 32) | u64::from(t.dwLowDateTime)
 }
 
-/// Milliseconds since this process was created.
+/// Milliseconds since this process was created (precise clock, backed by
+/// QueryPerformanceCounter; the coarse system clock ticks every ~15.6 ms).
 pub fn ms_since_process_start() -> Option<f64> {
     let (mut c, mut e, mut k, mut u) = (
         FILETIME::default(),
@@ -100,7 +103,22 @@ pub fn ms_since_process_start() -> Option<f64> {
             &raw mut u,
         )
         .ok()?;
-        let now = GetSystemTimeAsFileTime();
+        let now = GetSystemTimePreciseAsFileTime();
         Some(ft(now).saturating_sub(ft(c)) as f64 / 10_000.0)
     }
+}
+
+static MARKS: std::sync::Mutex<Vec<(&'static str, f64)>> = std::sync::Mutex::new(Vec::new());
+
+/// Records a startup milestone (cheap: one clock read and a push). The
+/// list is copied into the `--stats` output after the first frame.
+pub fn mark(name: &'static str) {
+    if let (Some(ms), Ok(mut m)) = (ms_since_process_start(), MARKS.lock()) {
+        m.push((name, ms));
+    }
+}
+
+/// The milestones recorded so far.
+pub fn marks() -> Vec<(&'static str, f64)> {
+    MARKS.lock().map(|m| m.clone()).unwrap_or_default()
 }
