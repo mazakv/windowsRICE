@@ -60,8 +60,9 @@ pub enum Section {
 }
 
 impl Section {
-    pub const ALL: [Section; 12] = [
-        Section::Home,
+    /// Every page reachable from the navigation. `Home` (before Phase 12)
+    /// is no longer listed: Templates is the starting page.
+    pub const ALL: [Section; 11] = [
         Section::Styles,
         Section::Themes,
         Section::Colors,
@@ -77,7 +78,7 @@ impl Section {
     pub fn name(self, lang: Lang) -> &'static str {
         let (en, ko) = match self {
             Section::Home => ("Home", "홈"),
-            Section::Styles => ("Design styles", "디자인 스타일"),
+            Section::Styles => ("Templates", "템플릿"),
             Section::Themes => ("Themes", "테마"),
             Section::Colors => ("Colours", "색"),
             Section::Background => ("Background", "배경"),
@@ -86,7 +87,7 @@ impl Section {
             Section::Modules => ("Modules", "모듈"),
             Section::Layout => ("Layout", "레이아웃"),
             Section::Effects => ("Effects", "효과"),
-            Section::Presets => ("Presets", "프리셋"),
+            Section::Presets => ("My designs", "내 디자인"),
             Section::Advanced => ("Advanced", "고급"),
         };
         if lang == Lang::En { en } else { ko }
@@ -152,6 +153,82 @@ impl Section {
             Section::Advanced => ("Screen space, monitors, reset", "화면 공간, 모니터, 재설정"),
         };
         if lang == Lang::En { en } else { ko }
+    }
+}
+
+/// The six main areas of the Design Studio (Phase 12). The sidebar shows
+/// the groups; the selected group lists its pages underneath.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Group {
+    Templates,
+    BarLayout,
+    Appearance,
+    Motion,
+    MyDesigns,
+    Advanced,
+}
+
+impl Group {
+    pub const ALL: [Group; 6] = [
+        Group::Templates,
+        Group::BarLayout,
+        Group::Appearance,
+        Group::Motion,
+        Group::MyDesigns,
+        Group::Advanced,
+    ];
+    /// The pages of the group, first page first.
+    pub fn sections(self) -> &'static [Section] {
+        match self {
+            Group::Templates => &[Section::Styles, Section::Themes],
+            Group::BarLayout => &[Section::Modules, Section::Layout],
+            Group::Appearance => &[
+                Section::Colors,
+                Section::Background,
+                Section::Typography,
+                Section::Icons,
+            ],
+            Group::Motion => &[Section::Effects],
+            Group::MyDesigns => &[Section::Presets],
+            Group::Advanced => &[Section::Advanced],
+        }
+    }
+    pub fn of(section: Section) -> Group {
+        Group::ALL
+            .into_iter()
+            .find(|g| g.sections().contains(&section))
+            .unwrap_or(Group::Templates)
+    }
+    pub fn name(self, lang: Lang) -> &'static str {
+        let (en, ko) = match self {
+            Group::Templates => ("Templates", "템플릿"),
+            Group::BarLayout => ("Bar layout", "바 레이아웃"),
+            Group::Appearance => ("Appearance", "모양"),
+            Group::Motion => ("Motion & media", "모션 및 미디어"),
+            Group::MyDesigns => ("My designs", "내 디자인"),
+            Group::Advanced => ("Advanced", "고급"),
+        };
+        if lang == Lang::En { en } else { ko }
+    }
+    pub fn glyph(self) -> &'static str {
+        match self {
+            Group::Templates => "\u{E790}",
+            Group::BarLayout => "\u{E8A9}",
+            Group::Appearance => "\u{E2B1}",
+            Group::Motion => "\u{E706}",
+            Group::MyDesigns => "\u{E74E}",
+            Group::Advanced => "\u{E713}",
+        }
+    }
+    pub fn key(self) -> &'static str {
+        match self {
+            Group::Templates => "templates",
+            Group::BarLayout => "bar-layout",
+            Group::Appearance => "appearance",
+            Group::Motion => "motion",
+            Group::MyDesigns => "my-designs",
+            Group::Advanced => "advanced",
+        }
     }
 }
 
@@ -1817,22 +1894,21 @@ fn build_once(
         s.panel,
         nav,
     );
+    // Six groups (Phase 12); the selected group lists its pages underneath
+    // (automation ids "group:<key>" and "nav:<page>").
     let mut y = HEADER + 16.0;
-    for sec in Section::ALL {
+    let current = Group::of(model.section);
+    for g in Group::ALL {
         let r = Rect::new(12.0, y, SIDEBAR - 24.0, 40.0).snap(scale);
-        let selected = sec == model.section;
-        let key = format!("nav:{}", sec.key());
+        let open = g == current;
+        let single = g.sections().len() == 1;
+        let selected = open && single;
+        let key = format!("group:{}", g.key());
         let id = u.add(
             nav,
-            Element::new(
-                key_id(&key),
-                intern(&key),
-                Role::ListItem,
-                sec.name(lang),
-                r,
-            )
-            .focusable(true)
-            .selected(selected),
+            Element::new(key_id(&key), intern(&key), Role::ListItem, g.name(lang), r)
+                .focusable(true)
+                .selected(selected),
         );
         if selected {
             u.fill(r, 8.0, s.selection, id);
@@ -1841,20 +1917,56 @@ fn build_once(
         u.decorate(id, r, 8.0);
         u.text(
             Rect::new(r.x + 16.0, r.y, 20.0, r.h),
-            sec.glyph(),
+            g.glyph(),
             u.icon(16.0),
-            if selected { s.accent } else { s.text2 },
+            if open { s.accent } else { s.text2 },
             id,
         );
         u.text(
             Rect::new(r.x + 46.0, r.y, r.w - 52.0, r.h),
-            sec.name(lang),
-            u.ts(14.0, if selected { 600 } else { 400 }),
+            g.name(lang),
+            u.ts(14.0, if open { 600 } else { 400 }),
             s.text,
             id,
         );
-        u.actions.push((id, StudioAction::Nav(sec)));
+        let target = if open { model.section } else { g.sections()[0] };
+        u.actions.push((id, StudioAction::Nav(target)));
         y += 44.0;
+        if !open || single {
+            continue;
+        }
+        for &sec in g.sections() {
+            let r = Rect::new(36.0, y, SIDEBAR - 48.0, 34.0).snap(scale);
+            let selected = sec == model.section;
+            let key = format!("nav:{}", sec.key());
+            let id = u.add(
+                nav,
+                Element::new(
+                    key_id(&key),
+                    intern(&key),
+                    Role::ListItem,
+                    sec.name(lang),
+                    r,
+                )
+                .focusable(true)
+                .selected(selected),
+            );
+            if selected {
+                u.fill(r, 8.0, s.selection, id);
+                u.fill(Rect::new(r.x, r.y + 8.0, 3.0, 18.0), 1.5, s.accent, id);
+            }
+            u.decorate(id, r, 8.0);
+            u.text(
+                Rect::new(r.x + 14.0, r.y, r.w - 18.0, r.h),
+                sec.name(lang),
+                u.ts(13.0, if selected { 600 } else { 400 }),
+                if selected { s.text } else { s.text2 },
+                id,
+            );
+            u.actions.push((id, StudioAction::Nav(sec)));
+            y += 36.0;
+        }
+        y += 4.0;
     }
 
     // ---------------------------------------------------------------- preview
@@ -3823,6 +3935,16 @@ pub fn valid_hex(s: &str) -> bool {
 /// Groups of keyboard-reachable elements, for tests and diagnostics.
 pub fn section_keys() -> HashMap<&'static str, Section> {
     Section::ALL.iter().map(|s| (s.key(), *s)).collect()
+}
+
+/// Section to open for a saved page key: the Home page of earlier versions
+/// (and unknown keys) open Templates.
+pub fn section_from_key(key: &str) -> Section {
+    Section::ALL
+        .iter()
+        .copied()
+        .find(|s| s.key() == key && *s != Section::Home)
+        .unwrap_or(Section::Styles)
 }
 
 /// One per-module appearance setting (Phase 9).

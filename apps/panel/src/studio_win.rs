@@ -456,11 +456,7 @@ impl Controller {
             .appearance
             .unwrap_or_else(|| !appearance::apps_use_light_theme().unwrap_or(false));
         let draft = self.current_draft();
-        let section = Section::ALL
-            .iter()
-            .copied()
-            .find(|x| x.key() == settings.section)
-            .unwrap_or(Section::Home);
+        let section = windowsrice_ui::studio::section_from_key(&settings.section);
         let model = StudioModel {
             section,
             draft: draft.clone(),

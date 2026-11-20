@@ -62,8 +62,8 @@ $sh = [WPQ.W]::FindWindowW('windowsRICE.Studio', [NullString]::Value)
 # Scroll the font gallery a little (wheel messages to the Studio window).
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
 $A = [System.Windows.Automation.AutomationElement]
-$nav = $A::FromHandle($sh).FindFirst([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition($A::AutomationIdProperty, 'nav:typography')))
-$nav.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select(); Start-Sleep -Milliseconds 800
+. (Join-Path $PSScriptRoot 'studio-nav.ps1')
+$null = Open-StudioPage 'typography' { param($x) $A::FromHandle($sh).FindFirst([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition($A::AutomationIdProperty, $x))) }; Start-Sleep -Milliseconds 800
 for ($k = 0; $k -lt 20; $k++) { [void][WPQ.W]::PostMessageW($sh, 0x020A, [IntPtr]([int](-120 -band 0xFFFF) -shl 16), [IntPtr]((800 -shl 16) -bor 1500)); Start-Sleep -Milliseconds 120 }
 Start-Sleep -Seconds 2
 $used = Mem $p
@@ -75,8 +75,7 @@ $closed = Mem $p
 Start-Process $exe -ArgumentList @('--studio', '--config', $cfg) -Wait
 Start-Sleep -Seconds 5
 $sh = [WPQ.W]::FindWindowW('windowsRICE.Studio', [NullString]::Value)
-$nav = $A::FromHandle($sh).FindFirst([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition($A::AutomationIdProperty, 'nav:typography')))
-$nav.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select(); Start-Sleep -Milliseconds 800
+$null = Open-StudioPage 'typography' { param($x) $A::FromHandle($sh).FindFirst([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition($A::AutomationIdProperty, $x))) }; Start-Sleep -Milliseconds 800
 for ($k = 0; $k -lt 20; $k++) { [void][WPQ.W]::PostMessageW($sh, 0x020A, [IntPtr]([int](-120 -band 0xFFFF) -shl 16), [IntPtr]((800 -shl 16) -bor 1500)); Start-Sleep -Milliseconds 120 }
 Start-Sleep -Seconds 2
 [void][WPQ.W]::PostMessageW($sh, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero)

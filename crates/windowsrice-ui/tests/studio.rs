@@ -213,11 +213,21 @@ fn every_section_is_accessible_and_every_control_works() {
                             e.automation_id
                         );
                     }
+                    // Phase 12: six groups; the open group lists its pages.
                     let navs: Vec<_> = t
                         .iter()
-                        .filter(|e| e.automation_id.starts_with("nav:"))
+                        .filter(|e| {
+                            e.automation_id.starts_with("nav:")
+                                || e.automation_id.starts_with("group:")
+                        })
                         .collect();
-                    assert_eq!(navs.len(), 12, "{ctx}");
+                    assert_eq!(
+                        navs.iter()
+                            .filter(|e| e.automation_id.starts_with("group:"))
+                            .count(),
+                        6,
+                        "{ctx}"
+                    );
                     assert_eq!(
                         navs.iter().filter(|e| e.selected == Some(true)).count(),
                         1,
@@ -848,4 +858,51 @@ fn monitor_toggle_while_unidentified_edits_the_matching_setting() {
         b.monitor_enabled(r"\.\DISPLAY1", Some("mon-a"), true),
         "woken monitor sees the toggle"
     );
+}
+
+#[test]
+fn navigation_has_six_groups_and_the_open_group_lists_its_pages() {
+    for section in Section::ALL {
+        let s = scene(&model(section), SIZES[0], Lang::En);
+        let t = &s.scene.tree;
+        let groups: Vec<_> = t
+            .iter()
+            .filter(|e| e.automation_id.starts_with("group:"))
+            .collect();
+        assert_eq!(groups.len(), 6, "{section:?}");
+        assert_eq!(groups[0].name, "Templates");
+        let open = Group::of(section);
+        // Pages of the open group are listed (when it has more than one);
+        // pages of other groups are not.
+        for g in Group::ALL {
+            for p in g.sections() {
+                let present = t
+                    .iter()
+                    .any(|e| e.automation_id == format!("nav:{}", p.key()));
+                let expect = g == open && g.sections().len() > 1;
+                assert_eq!(present, expect, "{section:?}: page {p:?} of {g:?}");
+            }
+        }
+        // Choosing a closed group opens its first page.
+        for g in Group::ALL.into_iter().filter(|g| *g != open) {
+            let e = groups
+                .iter()
+                .find(|e| e.automation_id == format!("group:{}", g.key()))
+                .unwrap();
+            assert_eq!(s.action(e.id), Some(&StudioAction::Nav(g.sections()[0])));
+        }
+    }
+    // Every page except the old Home page belongs to exactly one group.
+    for sec in Section::ALL {
+        assert_eq!(
+            Group::ALL
+                .iter()
+                .filter(|g| g.sections().contains(&sec))
+                .count(),
+            1,
+            "{sec:?}"
+        );
+    }
+    assert_eq!(section_from_key("home"), Section::Styles);
+    assert_eq!(section_from_key("colors"), Section::Colors);
 }

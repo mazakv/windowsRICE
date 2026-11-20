@@ -51,7 +51,10 @@ function Wait-Win([string]$cls) { for ($i = 0; $i -lt 80; $i++) { $h = [WSV.W]::
 function Root($h) { $A::FromHandle($h) }
 function ById($root, [string]$id) { $root.FindFirst($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($A::AutomationIdProperty, $id))) }
 function Invoke-Id($root, [string]$id) { $e = ById $root $id; if (-not $e) { throw "no element $id" }; $e.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 450 }
-function Select-Id($root, [string]$id) { $e = ById $root $id; if (-not $e) { throw "no element $id" }; $e.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select(); Start-Sleep -Milliseconds 450 }
+. (Join-Path $PSScriptRoot 'studio-nav.ps1')
+function Select-Id($root, [string]$id) {
+    if ($id -like 'nav:*') { $null = Open-StudioPage $id.Substring(4) { param($x) ById $root $x }; return }
+    $e = ById $root $id; if (-not $e) { throw "no element $id" }; $e.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select(); Start-Sleep -Milliseconds 450 }
 function Toggle-Id($root, [string]$id) { (ById $root $id).GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Toggle(); Start-Sleep -Milliseconds 450 }
 function Set-Id($root, [string]$id, [string]$v) { (ById $root $id).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($v); Start-Sleep -Milliseconds 450 }
 function Status($root) { (ById $root 'status').Current.Name }
@@ -147,15 +150,15 @@ Check 'Design Studio window opens (--studio)' ($sh -ne [IntPtr]::Zero)
 Start-Sleep -Seconds 3
 $s = Root $sh
 Check 'Studio root is a Window named "windowsRICE Design Studio"' (($s.Current.ControlType -eq $CT::Window) -and ($s.Current.Name -eq 'windowsRICE Design Studio')) $s.Current.Name
-$navs = @($s.FindAll($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($A::ControlTypeProperty, $CT::ListItem))) | Where-Object { $_.Current.AutomationId -like 'nav:*' })
-Check 'twelve navigation items' ($navs.Count -eq 12) (($navs | ForEach-Object { $_.Current.Name }) -join ', ')
+$navs = @($s.FindAll($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($A::ControlTypeProperty, $CT::ListItem))) | Where-Object { $_.Current.AutomationId -like 'group:*' })
+Check 'six navigation groups, Templates first' (($navs.Count -eq 6) -and ($navs[0].Current.Name -eq 'Templates')) (($navs | ForEach-Object { $_.Current.Name }) -join ', ')
 Check 'preview summary names the shown modules' ((ById $s 'preview:summary').Current.Name -like 'Preview shows * modules:*') (ById $s 'preview:summary').Current.Name
 $all = $s.FindAll($TS::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
 Check 'every Studio element is named' (@($all | Where-Object { [string]::IsNullOrWhiteSpace($_.Current.Name) }).Count -eq 0)
-foreach ($sec in 'home', 'styles', 'themes', 'colors', 'background', 'typography', 'icons', 'modules', 'layout', 'effects', 'presets', 'advanced') {
+foreach ($sec in $StudioPages) {
     Select-Id $s "nav:$sec"
     $s = Root $sh
-    $ok = (ById $s "nav:$sec").GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Current.IsSelected
+    $ok = Test-StudioPageSelected $sec { param($x) ById $s $x }
     Shot $sh "section-$sec.png"
     Check "section $sec opens" $ok
 }
@@ -174,7 +177,10 @@ Set-Id $s 'field:color-hex' 'orange'; $s = Root $sh
 Check 'invalid colour explained' ((Status $s) -match '#RRGGBB') (Status $s)
 Select-El (Reveal 'role:3'); $s = Root $sh                 # text role
 Set-Id $s 'field:color-hex' '#141A26'; $s = Root $sh
-Check 'unreadable text colour blocks Apply with an explanation' ((-not (ById $s 'apply').Current.IsEnabled) -and ((Status $s) -match 'ontrast')) (Status $s)
+# Phase 12: an unreadable text colour is drawn as the nearest readable
+# colour, and the correction is reported next to the colour editor.
+$rd = ById $s 'color:readability'
+Check 'unreadable text colour is corrected and the correction is reported' ($rd -and ($rd.Current.Name -match '^Readability: text #141A26 is shown as #')) $(if ($rd) { $rd.Current.Name } else { 'no notice' })
 Invoke-Id $s 'undo'; $s = Root $sh
 Check 'undo removes the unreadable colour' ((ById $s 'apply').Current.IsEnabled)
 Invoke-Id $s 'redo'; $s = Root $sh; Invoke-Id $s 'undo'; $s = Root $sh

@@ -1427,6 +1427,26 @@ fn color_editor(u: &mut Ui, g: ElementId, r: Rect) {
         );
     }
     y += all.len().div_ceil(per) as f32 * sz + 6.0;
+    // A colour the bar draws differently for readability (Phase 12) is
+    // reported right here, where it was chosen.
+    let notice =
+        u.m.warnings
+            .iter()
+            .find(|w| w.starts_with("Readability:") || w.starts_with("가독성:"))
+            .cloned();
+    if let Some(w) = notice {
+        let col = u.s.warning;
+        u.label(
+            g,
+            "color:readability",
+            Rect::new(r.x, y, r.w, 40.0),
+            &w,
+            12.0,
+            400,
+            col,
+        );
+        y += 44.0;
+    }
     // Hex and RGB.
     u.field(
         g,

@@ -42,7 +42,8 @@ function ByName([string]$name) { $A::FromHandle((Studio)).FindFirst($TS::Descend
 function Sel($e) { if (-not $e) { throw 'element not found' }; $e.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select(); Start-Sleep -Milliseconds 500 }
 function Inv([string]$id) { $e = ById $id; if (-not $e) { throw "no $id" }; $e.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 500 }
 function SetVal([string]$id, [string]$v) { (ById $id).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($v); Start-Sleep -Milliseconds 500 }
-function Nav([string]$sec) { Sel (ById "nav:$sec") }
+. (Join-Path $PSScriptRoot 'studio-nav.ps1')
+function Nav([string]$sec) { $null = Open-StudioPage $sec { param($x) ById $x }; Start-Sleep -Milliseconds 100 }
 function Status { (ById 'status').Current.Name }
 function IsSelected([string]$id) { $e = ById $id; $e -and $e.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Current.IsSelected }
 # Scrolls the section until the element is in the tree.

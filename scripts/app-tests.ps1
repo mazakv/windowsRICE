@@ -17,22 +17,36 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location $ProjectRoot
 if (-not (Test-Path 'target\release\windowsrice-panel.exe')) { throw 'build the release first (cargo build --release -p windowsrice-panel)' }
+
+# The scripts capture screenshots (only over a pinned test backdrop) with the
+# small `shot` tool of the Phase 3.5 spike workspace.
+$shot = Join-Path $ProjectRoot 'experiments\ui-spike\target\release\shot.exe'
+if (-not (Test-Path $shot)) {
+    Write-Host 'building the screenshot tool (experiments/ui-spike, package shot)'
+    $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    & cargo build --release --locked --manifest-path (Join-Path $ProjectRoot 'experiments\ui-spike\Cargo.toml') -p shot 2>&1 | ForEach-Object { "$_" } | Select-Object -Last 3 | Out-Host
+    $code = $LASTEXITCODE; $ErrorActionPreference = $prev
+    if ($code -ne 0 -or -not (Test-Path $shot)) { throw 'could not build the screenshot tool' }
+}
+
 $suite = @('design-e2e', 'studio-verify', 'bar-a11y', 'phase45-verify')
 if ($Only.Count) { $suite = @($suite | Where-Object { $Only -contains $_ }) }
 $host5 = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-$results = foreach ($s in $suite) {
-    Write-Output "`n=== $s"
+$results = @()
+foreach ($s in $suite) {
+    Write-Host "`n=== $s"
     $sw = [Diagnostics.Stopwatch]::StartNew()
     # Windows PowerShell 5.1: the scripts use its UI Automation assemblies.
     $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
-    & $host5 -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "$s.ps1") 2>&1 | ForEach-Object { "$_" } | Tee-Object -Variable lines | Out-Host
+    $lines = @(& $host5 -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "$s.ps1") 2>&1 | ForEach-Object { "$_" })
     $code = $LASTEXITCODE
     $ErrorActionPreference = $prev
+    $lines | Out-Host
     Get-Process windowsrice-panel -ErrorAction SilentlyContinue | Stop-Process -Force
     $summary = @($lines | Where-Object { $_ -match '^\d+ checks, ' }) | Select-Object -Last 1
-    [pscustomobject]@{ Script = $s; Exit = $code; Seconds = [math]::Round($sw.Elapsed.TotalSeconds); Summary = $summary }
+    $results += [pscustomobject]@{ Script = $s; Exit = $code; Seconds = [math]::Round($sw.Elapsed.TotalSeconds); Summary = $summary }
 }
 $results | Format-Table -AutoSize | Out-String -Width 200 | Out-Host
 $bad = @($results | Where-Object { $_.Exit -ne 0 -or -not $_.Summary })
-if ($bad.Count) { Write-Output ("FAILED: " + (($bad | ForEach-Object Script) -join ', ')); exit 1 }
-Write-Output 'all application checks passed'
+if ($bad.Count) { Write-Host ('FAILED: ' + (($bad | ForEach-Object { $_.Script }) -join ', ')); exit 1 }
+Write-Host 'all application checks passed'

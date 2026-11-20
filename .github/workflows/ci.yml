@@ -45,7 +45,8 @@ jobs:
             ~/.cargo/registry/cache
             ~/.cargo/git/db
             target
-          key: ci-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'Cargo.lock') }}
+            experiments/ui-spike/target
+          key: ci-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'Cargo.lock', 'experiments/ui-spike/Cargo.lock') }}
           restore-keys: ci-${{ runner.os }}-
 
       - name: Format, Clippy, workspace tests, release build

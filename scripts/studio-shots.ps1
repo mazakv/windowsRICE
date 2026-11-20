@@ -29,8 +29,9 @@ Start-Sleep -Seconds 3
 function ById([string]$id) { $A::FromHandle($h).FindFirst($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($A::AutomationIdProperty, $id))) }
 function Shot([string]$name) { $r = New-Object WSS.W+RECT; [void][WSS.W]::DwmGetWindowAttribute($h, 9, [ref]$r, 16); & "$ProjectRoot\experiments\ui-spike\target\release\shot.exe" (Join-Path $Out "$name.png") ($r.L + 8) ($r.T + 8) ($r.R - $r.L - 16) ($r.B - $r.T - 16) 1 | Out-Null }
 function Wheel([int]$notches) { for ($k = 0; $k -lt [math]::Abs($notches); $k++) { $d = if ($notches -lt 0) { 120 } else { -120 }; $r = New-Object WSS.W+RECT; [void][WSS.W]::GetWindowRect($h, [ref]$r); $x = [int](($r.L + $r.R) / 2); $y = [int](($r.T + $r.B) / 2); [void][WSS.W]::PostMessageW($h, 0x020A, [IntPtr](($d -band 0xFFFF) -shl 16), [IntPtr](($y -shl 16) -bor ($x -band 0xFFFF))); Start-Sleep -Milliseconds 80 } ; Start-Sleep -Milliseconds 400 }
-foreach ($sec in 'home', 'styles', 'themes', 'colors', 'background', 'typography', 'icons', 'modules', 'layout', 'effects', 'presets', 'advanced') {
-    (ById "nav:$sec").GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
+. (Join-Path $PSScriptRoot 'studio-nav.ps1')
+foreach ($sec in $StudioPages) {
+    $null = Open-StudioPage $sec { param($x) ById $x }
     Start-Sleep -Milliseconds 700
     Shot "section-$sec"
     if ($sec -in 'styles', 'typography', 'background', 'colors', 'modules') {
