@@ -190,6 +190,14 @@ pub fn with_bar_style(t: &ResolvedTheme, s: &windowsrice_core::bar::BarStyle) ->
     if let Some(c) = col(&s.border_color) {
         p.border_control = c;
     }
+    // Readability (Phase 12): the text roles must stay readable on every
+    // opaque surface they can sit on, whatever mix of theme, mode and manual
+    // colours produced them (for example a light theme under a dark
+    // gradient kept from an earlier style). A failing role is replaced by
+    // the nearest readable colour; the configuration is not changed.
+    let surfaces = text_surfaces(p.surface_base, s);
+    p.text_primary = readable(p.text_primary, &surfaces, 4.5);
+    p.text_secondary = readable(p.text_secondary, &surfaces, 4.5);
     if let Some(o) = s.opacity {
         r.theme.materials.surface_opacity = o;
     }
@@ -278,12 +286,21 @@ pub fn design_contrast(
     let col = |h: &str| parse_hex_color(h).map(|(r, g, b)| Color::rgb(r, g, b));
     let p = &t.palette;
     let opaque = |c: Color| Color { a: 255, ..c };
-    let mut surfaces = vec![("background".to_owned(), opaque(p.surface_base))];
-    if let Some(g) = &s.gradient {
-        for (i, c) in g.colors.iter().filter_map(|c| col(c)).enumerate() {
-            surfaces.push((format!("gradient colour {}", i + 1), c));
-        }
-    }
+    // A gradient of two or more colours replaces the background.
+    let stops: Vec<Color> = s
+        .gradient
+        .iter()
+        .flat_map(|g| g.colors.iter().filter_map(|c| col(c)))
+        .collect();
+    let mut surfaces = if stops.len() >= 2 {
+        stops
+            .iter()
+            .enumerate()
+            .map(|(i, c)| (format!("gradient colour {}", i + 1), *c))
+            .collect()
+    } else {
+        vec![("background".to_owned(), opaque(p.surface_base))]
+    };
     if s.module_shape != windowsrice_core::bar::ModuleShape::None
         && let Some(c) = s.module_background.as_deref().and_then(col)
     {
@@ -293,9 +310,12 @@ pub fn design_contrast(
         ("text".to_owned(), p.text_primary),
         ("secondary text".to_owned(), p.text_secondary),
     ];
+    // Clock and value colours are drawn corrected for readability, so the
+    // drawn colour is what is measured.
+    let visible: Vec<Color> = surfaces.iter().map(|(_, c)| *c).collect();
     for (name, v) in [("clock", &s.clock_color), ("values", &s.value_color)] {
         if let Some(c) = v.as_deref().and_then(col) {
-            texts.push((name.to_owned(), c));
+            texts.push((name.to_owned(), readable(c, &visible, 4.5)));
         }
     }
     let mut out = Vec::new();
@@ -351,4 +371,114 @@ pub fn opaque_text_contrast(t: &ResolvedTheme) -> f64 {
         ..p.surface_base
     };
     contrast_ratio(p.text_primary, surface).min(contrast_ratio(p.text_secondary, surface))
+}
+
+/// The opaque surfaces text can be drawn on: the bar background (or, when
+/// a gradient of two or more colours replaces it, every gradient colour)
+/// and, when modules have tiles, the module background.
+pub fn text_surfaces(base: Color, s: &windowsrice_core::bar::BarStyle) -> Vec<Color> {
+    use windowsrice_core::bar::parse_hex_color;
+    let col = |h: &str| parse_hex_color(h).map(|(r, g, b)| Color::rgb(r, g, b));
+    let stops: Vec<Color> = s
+        .gradient
+        .iter()
+        .flat_map(|g| g.colors.iter().filter_map(|c| col(c)))
+        .collect();
+    let mut out = if stops.len() >= 2 {
+        stops
+    } else {
+        vec![Color { a: 255, ..base }]
+    };
+    if s.module_shape != windowsrice_core::bar::ModuleShape::None
+        && let Some(c) = s.module_background.as_deref().and_then(col)
+    {
+        out.push(c);
+    }
+    out
+}
+
+/// Lowest contrast of `c` (composited over each surface) on `surfaces`.
+pub fn min_contrast(c: Color, surfaces: &[Color]) -> f64 {
+    use windowsrice_theme::color::contrast_ratio;
+    surfaces
+        .iter()
+        .map(|s| contrast_ratio(c.over(*s), *s))
+        .fold(f64::INFINITY, f64::min)
+}
+
+/// `c` if it reaches `need` contrast on every surface; otherwise the
+/// closest colour that does, found by moving `c` towards white or towards
+/// black (whichever needs the smaller change, so the hue is kept where
+/// possible). When no mix reaches `need` (surfaces both very light and very
+/// dark), the mix with the best worst-case contrast is used.
+pub fn readable(c: Color, surfaces: &[Color], need: f64) -> Color {
+    let c = Color {
+        a: 255,
+        ..c.over(surfaces.first().copied().unwrap_or(c))
+    };
+    if surfaces.is_empty() || min_contrast(c, surfaces) + 1e-9 >= need {
+        return c;
+    }
+    let mix = |to: Color, k: f32| {
+        let m = |a: u8, b: u8| (f32::from(a) + (f32::from(b) - f32::from(a)) * k).round() as u8;
+        Color::rgb(m(c.r, to.r), m(c.g, to.g), m(c.b, to.b))
+    };
+    let mut best = c;
+    let mut best_score = min_contrast(c, surfaces);
+    for step in 1..=20 {
+        let k = step as f32 / 20.0;
+        for to in [Color::rgb(255, 255, 255), Color::rgb(0, 0, 0)] {
+            let cand = mix(to, k);
+            let score = min_contrast(cand, surfaces);
+            if score + 1e-9 >= need {
+                return cand;
+            }
+            if score > best_score {
+                best = cand;
+                best_score = score;
+            }
+        }
+    }
+    best
+}
+
+/// The readability corrections `with_bar_style` makes for this design, as
+/// (role, chosen colour, corrected colour). The Design Studio shows them so
+/// a correction is never silent.
+pub fn readability_fixes(
+    t: &ResolvedTheme,
+    s: &windowsrice_core::bar::BarStyle,
+) -> Vec<(&'static str, Color, Color)> {
+    // The colours before correction (the override, else the theme's role),
+    // compared with what is drawn.
+    let raw = |h: &Option<String>, fallback: Color| {
+        h.as_deref()
+            .and_then(windowsrice_core::bar::parse_hex_color)
+            .map_or(fallback, |(r, g, b)| Color::rgb(r, g, b))
+    };
+    let fixed = with_bar_style(t, s);
+    let surfaces = text_surfaces(fixed.palette.surface_base, s);
+    let mut out = Vec::new();
+    let primary = raw(&s.text, t.palette.text_primary);
+    if min_contrast(primary, &surfaces) + 1e-9 < 4.5 {
+        out.push(("text", primary, fixed.palette.text_primary));
+    }
+    for (role, v, need) in [
+        ("secondary text", &s.text_secondary, 4.5),
+        ("clock", &s.clock_color, 4.5),
+        ("values", &s.value_color, 4.5),
+        ("icons", &s.icon_color, 3.0),
+    ] {
+        if let Some(c) = v
+            .as_deref()
+            .and_then(windowsrice_core::bar::parse_hex_color)
+        {
+            let c = Color::rgb(c.0, c.1, c.2);
+            let r = readable(c, &surfaces, need);
+            if r != c {
+                out.push((role, c, r));
+            }
+        }
+    }
+    out
 }

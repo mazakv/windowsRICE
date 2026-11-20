@@ -3,6 +3,7 @@ name = "windowsrice-render"
 description = "windowsRICE native renderer: Direct3D 11, Direct2D, DirectWrite and DirectComposition for windowsRICE-owned windows"
 version.workspace = true
 license.workspace = true
+repository.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true

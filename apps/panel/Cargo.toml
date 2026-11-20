@@ -3,6 +3,7 @@ name = "windowsrice-panel"
 description = "windowsRICE top panel (Phase 4 rendering foundation prototype)"
 version.workspace = true
 license.workspace = true
+repository.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true

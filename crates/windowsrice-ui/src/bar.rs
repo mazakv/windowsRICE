@@ -754,17 +754,21 @@ pub fn build_bar(
         } else {
             under(style.surface)
         };
+        // Manual colours stay readable on what is actually under them
+        // (Phase 12): 3:1 for icons, 4.5:1 for text.
+        let fit_icon = |c: Color| crate::style::readable(c, &[bg], 3.0);
+        let fit_text = |c: Color| crate::style::readable(c, &[bg], 4.5);
         let icon_color = if !v.available {
             style.text_disabled
         } else if let Some(c) = l.look.color {
-            c
+            fit_icon(c)
         } else {
             match d.icon_tint {
                 IconTint::Text => style.text_primary,
                 IconTint::Secondary => style.text_secondary,
                 IconTint::Accent => ensure_contrast(style.accent, style.text_primary, bg, 3.0),
                 IconTint::Colorful => colorful(v.kind, style, bg),
-                IconTint::Custom => d.icon_color.unwrap_or(style.text_primary),
+                IconTint::Custom => d.icon_color.map_or(style.text_primary, fit_icon),
             }
         };
         let content_w: f32 = l.widths.iter().sum::<f32>()
@@ -789,7 +793,7 @@ pub fn build_bar(
                     } else if *secondary {
                         style.text_secondary
                     } else if v.kind == ModuleKind::Clock && *emphasis {
-                        d.clock_color.unwrap_or(style.text_primary)
+                        d.clock_color.map_or(style.text_primary, fit_text)
                     } else if !*label
                         && !matches!(
                             v.kind,
@@ -799,7 +803,10 @@ pub fn build_bar(
                                 | ModuleKind::CustomIcon
                         )
                     {
-                        l.look.color.or(d.value_color).unwrap_or(style.text_primary)
+                        l.look
+                            .color
+                            .or(d.value_color)
+                            .map_or(style.text_primary, fit_text)
                     } else {
                         style.text_primary
                     };

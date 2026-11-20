@@ -647,6 +647,36 @@ impl Controller {
                         Lang::Ko => format!("{what} 대비가 {c:.1}:1로 최소 4.5:1보다 낮습니다. 배경을 더 어둡게 하거나 글자를 더 밝게 (또는 반대로) 바꾸세요."),
                     });
                 }
+                // Colours the bar corrects for readability (Phase 12): shown,
+                // never silent. The theme without the design's colours is the
+                // reference for what the user chose.
+                let plain = windowsrice_ui::style::resolve_bar_theme(
+                    self.theme.catalog(),
+                    &draft.theme,
+                    &Default::default(),
+                    system_mode(&self.args),
+                );
+                if let Some(plain) = plain {
+                    for (role, from, to) in
+                        windowsrice_ui::style::readability_fixes(&plain, &draft.bar.style)
+                    {
+                        let hex = |c: windowsrice_theme::Color| {
+                            format!("#{:02X}{:02X}{:02X}", c.r, c.g, c.b)
+                        };
+                        warnings.push(match lang {
+                            Lang::En => format!(
+                                "Readability: {role} {} is shown as {} on this background.",
+                                hex(from),
+                                hex(to)
+                            ),
+                            Lang::Ko => format!(
+                                "가독성: 이 배경에서 {role} {}을(를) {}(으)로 표시합니다.",
+                                hex(from),
+                                hex(to)
+                            ),
+                        });
+                    }
+                }
                 let style = PanelStyle::from_theme(
                     r,
                     window::high_contrast().as_ref(),

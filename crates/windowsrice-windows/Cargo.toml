@@ -3,6 +3,7 @@ name = "windowsrice-windows"
 description = "windowsRICE Windows integration layer (read-only queries only)"
 version.workspace = true
 license.workspace = true
+repository.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true

@@ -3,6 +3,7 @@ name = "windowsrice-ui"
 description = "windowsRICE UI model: layout, accessibility element tree, keyboard navigation, draw lists and surface legibility policy (platform-independent)"
 version.workspace = true
 license.workspace = true
+repository.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
