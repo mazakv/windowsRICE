@@ -49,7 +49,14 @@ $checks = [System.Collections.Generic.List[object]]::new()
 function Check([string]$what, [bool]$ok, [string]$detail = '') { $checks.Add([pscustomobject]@{ check = $what; pass = $ok; detail = $detail }) }
 function Wait-Win([string]$cls) { for ($i = 0; $i -lt 80; $i++) { $h = [WSV.W]::FindWindowW($cls, [NullString]::Value); if ($h -ne [IntPtr]::Zero) { return $h }; Start-Sleep -Milliseconds 100 }; [IntPtr]::Zero }
 function Root($h) { $A::FromHandle($h) }
-function ById($root, [string]$id) { $root.FindFirst($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($A::AutomationIdProperty, $id))) }
+function ByIdRaw($root, [string]$id) { $root.FindFirst($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($A::AutomationIdProperty, $id))) }
+function ById($root, [string]$id) {
+    $e = ByIdRaw $root $id; if ($e) { return $e }
+    # Studio elements below or above the visible part: scroll for them.
+    $st = [WSV.W]::FindWindowW('windowsRICE.Studio', [NullString]::Value)
+    if ($st -ne [IntPtr]::Zero -and $root -and $root.Current.NativeWindowHandle -eq [int]$st) { try { return (Reveal $id) } catch { return $null } }
+    $null
+}
 function Invoke-Id($root, [string]$id) { $e = ById $root $id; if (-not $e) { throw "no element $id" }; $e.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 450 }
 . (Join-Path $PSScriptRoot 'studio-nav.ps1')
 function Select-Id($root, [string]$id) {
@@ -131,14 +138,14 @@ function Bar-Shot([string]$name) {
 # Scrolls the Studio section until an element is in the tree.
 function Reveal([string]$id) {
     $sh2 = [WSV.W]::FindWindowW('windowsRICE.Studio', [NullString]::Value)
-    $e = ById (Root $sh2) $id; if ($e) { return $e }
+    $e = ByIdRaw (Root $sh2) $id; if ($e) { return $e }
     # Back to the top first (the element may be above the visible part).
     $r = New-Object WSV.W+RECT; [void][WSV.W]::GetWindowRect($sh2, [ref]$r)
     $x = [int](($r.L + $r.R) / 2) - 200; $y = [int](($r.T + $r.B) / 2) + 200
     for ($k = 0; $k -lt 40; $k++) { [void][WSV.W]::PostMessageW($sh2, 0x020A, [IntPtr]([int](120 -band 0xFFFF) -shl 16), [IntPtr](($y -shl 16) -bor ($x -band 0xFFFF))) }
     Start-Sleep -Milliseconds 600
     for ($k = 0; $k -lt 30; $k++) {
-        $e = ById (Root $sh2) $id; if ($e) { return $e }
+        $e = ByIdRaw (Root $sh2) $id; if ($e) { return $e }
         $r = New-Object WSV.W+RECT; [void][WSV.W]::GetWindowRect($sh2, [ref]$r)
         $x = [int](($r.L + $r.R) / 2) - 200; $y = [int](($r.T + $r.B) / 2) + 200
         [void][WSV.W]::PostMessageW($sh2, 0x020A, [IntPtr]([int](-120 -band 0xFFFF) -shl 16), [IntPtr](($y -shl 16) -bor ($x -band 0xFFFF)))
@@ -228,6 +235,7 @@ Shot $sh 'modules-edited.png'
 # ---- Themes: duplicate, edit, save, delete (confirmation)
 Select-Id $s 'nav:themes'; $s = Root $sh
 $tc = @((Root $sh).FindAll($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($A::ControlTypeProperty, $CT::ListItem))) | Where-Object { $_.Current.AutomationId -like 'theme:*' -and $_.Current.Name -like 'windowsRICE Default.*' })[0]
+if (-not $tc) { $tc = Reveal 'theme:0' }   # off-screen on small windows
 $tc.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select(); Start-Sleep -Milliseconds 500; $s = Root $sh
 Invoke-Id $s 'props:dup'; Start-Sleep -Milliseconds 600; $s = Root $sh
 $themeFile = @(Get-ChildItem (Join-Path $Out 'themes') -Filter 'custom-*.toml' -ErrorAction SilentlyContinue)
@@ -335,8 +343,12 @@ Check 'script content is refused (no executable content accepted: failed)' ($c2 
 # Preview the fixed design (it becomes the draft; Undo returns).
 [System.Windows.Forms.Clipboard]::SetText(($code -replace '"name": "[^"]*"', '"name": "Imported test"'))
 Press 'import:paste'; Press 'import:analyze'
+# Actions are processed asynchronously: wait for the analysis to finish and
+# the Preview button to become enabled before pressing it.
+for ($w = 0; $w -lt 40 -and -not ((NameOf 'import:summary') -match '^Ready' -and (Reveal 'import:preview').Current.IsEnabled); $w++) { Start-Sleep -Milliseconds 150 }
 $pv = Reveal 'import:preview'
-$pv.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 500
+$pv.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+for ($w = 0; $w -lt 30 -and (Status (Root $sh)) -notmatch '^Previewing'; $w++) { Start-Sleep -Milliseconds 150 }
 Check 'Preview loads the imported design into the draft' ((Status (Root $sh)) -match 'Previewing "Imported test"') (Status (Root $sh))
 (Reveal 'import:save').GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 500
 Check 'Save to My designs stores it as a preset' ((Test-Path (Join-Path $Out 'presets')) -and @(Get-ChildItem (Join-Path $Out 'presets') -Filter '*.toml' | Where-Object { (Get-Content $_.FullName -Raw) -match 'Imported test' }).Count -eq 1)

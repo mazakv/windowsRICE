@@ -37,7 +37,10 @@ $checks = [System.Collections.Generic.List[object]]::new()
 function Check([string]$what, [bool]$ok, [string]$detail = '') { $checks.Add([pscustomobject]@{ check = $what; pass = $ok; detail = $detail }); Write-Host ("{0} {1} {2}" -f ($(if ($ok) { 'PASS' } else { 'FAIL' })), $what, $detail) }
 function Wait-Win([string]$cls, [string]$title) { for ($i = 0; $i -lt 100; $i++) { $h = [WDE.W]::FindWindowW($cls, $title); if ($h -ne [IntPtr]::Zero) { return $h }; Start-Sleep -Milliseconds 100 }; [IntPtr]::Zero }
 function Studio { [WDE.W]::FindWindowW('windowsRICE.Studio', [NullString]::Value) }
-function ById([string]$id) { $A::FromHandle((Studio)).FindFirst($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($A::AutomationIdProperty, $id))) }
+function ByIdRaw([string]$id) { $A::FromHandle((Studio)).FindFirst($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($A::AutomationIdProperty, $id))) }
+# Elements outside the visible part of a page are not in the tree until
+# scrolled into view (small screens such as 1024x768 CI runners); scroll for them.
+function ById([string]$id) { $e = ByIdRaw $id; if ($e) { return $e }; try { Reveal $id } catch { $null } }
 function ByName([string]$name) { $A::FromHandle((Studio)).FindFirst($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($A::NameProperty, $name))) }
 function Sel($e) { if (-not $e) { throw 'element not found' }; $e.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select(); Start-Sleep -Milliseconds 500 }
 function Inv([string]$id) { $e = ById $id; if (-not $e) { throw "no $id" }; $e.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 500 }
@@ -48,8 +51,13 @@ function Status { (ById 'status').Current.Name }
 function IsSelected([string]$id) { $e = ById $id; $e -and $e.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Current.IsSelected }
 # Scrolls the section until the element is in the tree.
 function Reveal([string]$id) {
+    $e = ByIdRaw $id; if ($e) { return $e }
+    $r = New-Object WDE.W+RECT; [void][WDE.W]::GetWindowRect((Studio), [ref]$r)
+    $x = [int](($r.L + $r.R) / 2) - 200; $y = [int](($r.T + $r.B) / 2) + 200
+    for ($k = 0; $k -lt 40; $k++) { [void][WDE.W]::PostMessageW((Studio), 0x020A, [IntPtr]([int](120 -band 0xFFFF) -shl 16), [IntPtr](($y -shl 16) -bor ($x -band 0xFFFF))) }
+    Start-Sleep -Milliseconds 500
     for ($k = 0; $k -lt 30; $k++) {
-        $e = ById $id; if ($e) { return $e }
+        $e = ByIdRaw $id; if ($e) { return $e }
         $r = New-Object WDE.W+RECT; [void][WDE.W]::GetWindowRect((Studio), [ref]$r)
         $x = [int](($r.L + $r.R) / 2) - 200; $y = [int](($r.T + $r.B) / 2) + 200
         [void][WDE.W]::PostMessageW((Studio), 0x020A, [IntPtr]([int](-120 -band 0xFFFF) -shl 16), [IntPtr](($y -shl 16) -bor ($x -band 0xFFFF)))

@@ -657,10 +657,52 @@ impl ImportView {
 }
 
 /// What the Studio edits. Applying writes it to `config.toml`.
-#[derive(Debug, Clone, PartialEq)]
+///
+/// `bar` is the bar being edited: the top bar, or the bottom bar when
+/// `editing_bottom` is set (Phase 14). The other bar waits in `other`, so
+/// every Studio page edits whichever bar is selected.
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct Draft {
     pub theme: ThemeSelection,
     pub bar: BarConfig,
+    pub other: Option<BarConfig>,
+    pub editing_bottom: bool,
+}
+
+impl Draft {
+    pub fn new(theme: ThemeSelection, top: BarConfig, bottom: Option<BarConfig>) -> Self {
+        Self {
+            theme,
+            bar: top,
+            other: bottom,
+            editing_bottom: false,
+        }
+    }
+    /// The top bar.
+    pub fn top(&self) -> &BarConfig {
+        match (&self.other, self.editing_bottom) {
+            (Some(t), true) => t,
+            _ => &self.bar,
+        }
+    }
+    /// The bottom bar, if one is configured.
+    pub fn bottom(&self) -> Option<&BarConfig> {
+        if self.editing_bottom {
+            Some(&self.bar)
+        } else {
+            self.other.as_ref()
+        }
+    }
+    /// Swaps which bar `bar` holds. A bottom bar that does not exist yet is
+    /// created from [`BarConfig::default_bottom`], turned off.
+    pub fn swap_bars(&mut self) {
+        let other = self.other.take().unwrap_or_else(|| BarConfig {
+            enabled: false,
+            ..BarConfig::default_bottom()
+        });
+        self.other = Some(std::mem::replace(&mut self.bar, other));
+        self.editing_bottom = !self.editing_bottom;
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -995,6 +1037,10 @@ pub enum StudioAction {
     ExportPackage,
     /// Start a design from scratch (Phase 12).
     CreateCustom,
+    /// Edit the bottom bar (`true`) or the top bar (Phase 14).
+    EditBottomBar(bool),
+    /// Show or hide the bottom bar.
+    ToggleBottomBar,
     ToggleReserve,
     ToggleAutoHide,
     AutoHideDelayDown,
@@ -4035,6 +4081,18 @@ pub fn apply_draft_action(
 ) -> bool {
     use crate::popup::step_interval;
     let before = d.clone();
+    if matches!(a, StudioAction::ToggleBottomBar) {
+        if d.editing_bottom {
+            d.bar.enabled = !d.bar.enabled;
+        } else {
+            let o = d.other.get_or_insert_with(|| BarConfig {
+                enabled: false,
+                ..BarConfig::default_bottom()
+            });
+            o.enabled = !o.enabled;
+        }
+        return *d != before;
+    }
     let b = &mut d.bar;
     let find = |b: &BarConfig, id: &str| b.modules.iter().position(|m| m.id == id);
     match a {

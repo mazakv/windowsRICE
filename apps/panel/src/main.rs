@@ -149,7 +149,26 @@ fn defer(d: Option<Deferred>) {
     }
 }
 
+/// "TaskbarCreated": broadcast when Explorer (the taskbar) starts again.
+/// Application desktop toolbars must register again then (Phase 14).
+fn taskbar_created() -> u32 {
+    static MSG: std::sync::OnceLock<u32> = std::sync::OnceLock::new();
+    *MSG.get_or_init(|| {
+        // SAFETY: registers (or looks up) a named window message.
+        unsafe {
+            windows::Win32::UI::WindowsAndMessaging::RegisterWindowMessageW(w!("TaskbarCreated"))
+        }
+    })
+}
+
 extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    if msg != 0 && msg == taskbar_created() {
+        if with_ctl(|c| c.is_controller(hwnd)).unwrap_or(false) {
+            with_ctl(Controller::on_taskbar_created);
+        }
+        // SAFETY: default processing for our own window.
+        return unsafe { DefWindowProcW(hwnd, msg, wparam, lparam) };
+    }
     if with_ctl(|c| c.is_studio(hwnd)).unwrap_or(false) {
         if msg == WM_MOUSEACTIVATE {
             // SAFETY: default processing (activate) for our own window.

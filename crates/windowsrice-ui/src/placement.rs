@@ -63,6 +63,28 @@ pub fn bar_rect(monitor: PhysRect, scale: f32, height: f32) -> PhysRect {
     }
 }
 
+/// Bottom bar rectangle (Phase 14): the full width of `area`, touching its
+/// bottom edge. `area` is the work area when the bar does not reserve space
+/// (so it never covers the Windows taskbar); the shell positions a
+/// reserving bar itself.
+pub fn bar_rect_bottom(area: PhysRect, scale: f32, height: f32) -> PhysRect {
+    let h = ((height * scale).round() as i32).max(1);
+    PhysRect {
+        left: area.left,
+        top: area.bottom - h,
+        right: area.right,
+        bottom: area.bottom,
+    }
+}
+
+/// Collapsed auto-hide strip of a bottom bar: its bottom `px` pixels.
+pub fn collapsed_rect_bottom(full: PhysRect, px: i32) -> PhysRect {
+    PhysRect {
+        top: full.bottom - px.max(1),
+        ..full
+    }
+}
+
 /// Collapsed auto-hide strip: the top `px` physical pixels of the bar area,
 /// kept so that pointing at the top edge brings the bar back.
 pub fn collapsed_rect(full: PhysRect, px: i32) -> PhysRect {

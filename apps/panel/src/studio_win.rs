@@ -286,10 +286,11 @@ impl Controller {
     }
 
     fn current_draft(&self) -> Draft {
-        Draft {
-            theme: self.config().theme.clone(),
-            bar: self.config().bar.clone(),
-        }
+        Draft::new(
+            self.config().theme.clone(),
+            self.config().bar.clone(),
+            self.config().bottom_bar.clone(),
+        )
     }
 
     /// The draft's theme resolved like the bar resolves it, with overrides.
@@ -643,7 +644,8 @@ impl Controller {
         let mut warnings = Vec::new();
         let lang = self.lang();
         let mut cfg = self.config().clone();
-        cfg.bar = draft.bar.clone();
+        cfg.bar = draft.top().clone();
+        cfg.bottom_bar = draft.bottom().cloned();
         cfg.theme = draft.theme.clone();
         if let Err(e) = cfg.validate() {
             blocking.push(e.to_string());
@@ -996,8 +998,29 @@ impl Controller {
                 }
                 Deferred::Nothing
             }
+            StudioAction::EditBottomBar(bottom) => {
+                if let Some(st) = &mut self.studio
+                    && st.model.draft.editing_bottom != bottom
+                {
+                    // The draft, the applied copy and the history all swap,
+                    // so Undo and "not applied" stay correct.
+                    st.model.draft.swap_bars();
+                    st.model.applied.swap_bars();
+                    for d in st.undo.iter_mut().chain(st.redo.iter_mut()) {
+                        d.swap_bars();
+                    }
+                }
+                Deferred::Nothing
+            }
             StudioAction::Revert => {
-                let applied = self.current_draft();
+                let mut applied = self.current_draft();
+                if self
+                    .studio
+                    .as_ref()
+                    .is_some_and(|s| s.model.draft.editing_bottom)
+                {
+                    applied.swap_bars();
+                }
                 self.edit(|d| {
                     *d = applied;
                     true
@@ -1340,14 +1363,20 @@ impl Controller {
         let mode = system_mode(&self.args);
         let lang = self.lang();
         let result: Result<bool, String> = match &mut self.theme {
-            ThemeSource::Service(s) => match s.update_config(|c| c.bar = draft.bar.clone()) {
+            ThemeSource::Service(s) => match s.update_config(|c| {
+                c.bar = draft.top().clone();
+                c.bottom_bar = draft.bottom().cloned();
+            }) {
                 Err(e) => Err(e),
                 Ok(_) if draft.theme != old.theme => {
                     match s.select(&draft.theme.active, draft.theme.mode, mode, &mut self.sink) {
                         Ok(_) => Ok(true),
                         Err(e) => {
                             // Roll back the bar settings so config.toml stays consistent.
-                            let rb = s.update_config(|c| c.bar = old.bar.clone());
+                            let rb = s.update_config(|c| {
+                                c.bar = old.top().clone();
+                                c.bottom_bar = old.bottom().cloned();
+                            });
                             Err(match (lang, rb) {
                                 (Lang::En, Ok(_)) => format!(
                                     "Theme could not be applied ({e}); bar settings were rolled back."
@@ -1369,7 +1398,8 @@ impl Controller {
             },
             ThemeSource::Override { engine, config } => {
                 let mut c = config.clone();
-                c.bar = draft.bar.clone();
+                c.bar = draft.top().clone();
+                c.bottom_bar = draft.bottom().cloned();
                 match c.validate() {
                     Err(e) => Err(e.to_string()),
                     Ok(()) => match engine.activate(
@@ -1394,7 +1424,8 @@ impl Controller {
                     .config_saves
                     .push(format!("{:.2}s studio apply", self.stats.now_s()));
                 self.restyle();
-                self.scheduler.reconfigure(&self.config().bar.modules);
+                self.scheduler
+                    .reconfigure(&crate::controller::all_modules(self.config()));
                 self.sync_bars("studio apply");
                 for i in 0..self.bars.len() {
                     self.layout_bar(i, "studio apply");
@@ -1412,7 +1443,10 @@ impl Controller {
                         self.style.fade_ms.min(200)
                     ));
                 }
-                let applied = self.current_draft();
+                let mut applied = self.current_draft();
+                if draft.editing_bottom {
+                    applied.swap_bars();
+                }
                 // Confirm that the running bar now uses the new values: a
                 // saved file alone does not prove that the bar changed.
                 let expected = self.draft_theme(&draft).map(|r| {

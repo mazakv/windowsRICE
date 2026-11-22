@@ -312,6 +312,9 @@ pub struct BarConfig {
     /// Windows' "Animation effects" setting is respected as well.
     #[serde(skip_serializing_if = "is_true")]
     pub animations: bool,
+    /// The bar is shown (Phase 14). Turning a bar off keeps its settings.
+    #[serde(skip_serializing_if = "is_true")]
+    pub enabled: bool,
     pub modules: Vec<ModuleConfig>,
 }
 
@@ -728,7 +731,48 @@ impl Default for BarConfig {
             popup: PopupConfig::default(),
             style: BarStyle::default(),
             animations: true,
+            enabled: true,
             modules: default_modules(),
+        }
+    }
+}
+
+impl BarConfig {
+    /// The bottom bar a user starts from (Phase 14): a dock-like strip with
+    /// the menu, the active window, quick system readings and the clock.
+    /// It never replaces the Windows taskbar; with the taskbar at the bottom
+    /// the shell places it just above.
+    pub fn default_bottom() -> Self {
+        use ModuleKind as K;
+        use Region::{Center, Left, Right};
+        let mut modules: Vec<ModuleConfig> = default_modules();
+        for m in &mut modules {
+            m.enabled = false;
+        }
+        let on = [
+            ("menu", Left),
+            ("active-window", Left),
+            ("cpu", Center),
+            ("ram", Center),
+            ("download", Center),
+            ("volume", Right),
+            ("clock", Right),
+        ];
+        let mut out = Vec::new();
+        for (id, region) in on {
+            if let Some(i) = modules.iter().position(|m| m.id == id) {
+                let mut m = modules.remove(i);
+                m.region = region;
+                m.enabled = true;
+                out.push(m);
+            }
+        }
+        out.extend(modules);
+        debug_assert!(out.iter().any(|m| m.kind == K::Menu));
+        Self {
+            height: Some(36),
+            modules: out,
+            ..Self::default()
         }
     }
 }

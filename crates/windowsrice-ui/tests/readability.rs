@@ -35,6 +35,7 @@ fn draft() -> Draft {
     Draft {
         theme: ThemeSelection::default(),
         bar: BarConfig::default(),
+        ..Default::default()
     }
 }
 

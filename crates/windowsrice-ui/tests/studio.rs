@@ -65,6 +65,7 @@ fn model(section: Section) -> StudioModel {
     let draft = Draft {
         theme: ThemeSelection::default(),
         bar: BarConfig::default(),
+        ..Default::default()
     };
     let themes = CATALOG.with(|c| {
         c.entries()
@@ -492,6 +493,7 @@ fn colour_roles_and_theme_cards() {
     let mut d = Draft {
         theme: ThemeSelection::default(),
         bar: BarConfig::default(),
+        ..Default::default()
     };
     ColorTarget::Clock.set(&mut d.bar.style, Some("#E3A33B".into()));
     ColorTarget::Icons.set(&mut d.bar.style, Some("#36D1C4".into()));
@@ -578,6 +580,7 @@ fn draft_edits() {
     let mut d = Draft {
         theme: ThemeSelection::default(),
         bar: BarConfig::default(),
+        ..Default::default()
     };
     assert!(apply_draft_action(
         &mut d,
@@ -687,6 +690,7 @@ fn phase9_module_appearance_animations_and_font_filters() {
     let mut d = Draft {
         theme: ThemeSelection::default(),
         bar: BarConfig::default(),
+        ..Default::default()
     };
     let set = |f: ModuleField| StudioAction::ModuleSet("cpu".into(), f);
     assert!(apply_draft_action(
@@ -969,5 +973,68 @@ fn import_page_shows_checks_problems_and_the_line_editor() {
                 e.automation_id
             );
         }
+    }
+}
+
+#[test]
+fn the_bottom_bar_is_edited_like_the_top_bar() {
+    let top = BarConfig::default();
+    let mut d = Draft::new(ThemeSelection::default(), top.clone(), None);
+    // Showing the bottom bar creates it from the default bottom layout.
+    assert!(apply_draft_action(
+        &mut d,
+        &StudioAction::ToggleBottomBar,
+        0.88,
+        34
+    ));
+    assert!(d.bottom().unwrap().enabled);
+    assert_eq!(d.top(), &top);
+    // Switch to it: every page now edits the bottom bar.
+    d.swap_bars();
+    assert!(d.editing_bottom);
+    assert!(apply_draft_action(
+        &mut d,
+        &StudioAction::Background(Some("#102030".into())),
+        0.88,
+        34
+    ));
+    assert_eq!(
+        d.bottom().unwrap().style.background.as_deref(),
+        Some("#102030")
+    );
+    assert_eq!(d.top().style.background, None, "the top bar is not changed");
+    // And back.
+    d.swap_bars();
+    assert!(!d.editing_bottom);
+    assert_eq!(d.top(), &top);
+    assert_eq!(
+        d.bottom().unwrap().style.background.as_deref(),
+        Some("#102030")
+    );
+    // Hiding keeps its settings.
+    assert!(apply_draft_action(
+        &mut d,
+        &StudioAction::ToggleBottomBar,
+        0.88,
+        34
+    ));
+    assert!(!d.bottom().unwrap().enabled);
+    assert_eq!(
+        d.bottom().unwrap().style.background.as_deref(),
+        Some("#102030")
+    );
+    let cfg = windowsrice_core::config::Config {
+        bar: d.top().clone(),
+        bottom_bar: d.bottom().cloned(),
+        ..Default::default()
+    };
+    assert!(cfg.validate().is_ok());
+    // The Layout page offers the choice.
+    let mut m = model(Section::Layout);
+    m.draft = d;
+    let s = scene(&m, SIZES[0], Lang::En);
+    for k in ["bars:top", "bars:bottom", "bars:show-bottom"] {
+        let e = s.scene.tree.iter().find(|e| e.automation_id == k).expect(k);
+        assert!(s.action(e.id).is_some());
     }
 }

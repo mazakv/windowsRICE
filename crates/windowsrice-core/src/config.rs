@@ -47,6 +47,9 @@ pub struct Config {
     pub launcher: LauncherConfig,
     pub logging: LoggingConfig,
     pub bar: BarConfig,
+    /// Optional bottom bar (Phase 14), configured independently of `[bar]`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bottom_bar: Option<BarConfig>,
 }
 
 impl Default for Config {
@@ -59,6 +62,7 @@ impl Default for Config {
             launcher: LauncherConfig::default(),
             logging: LoggingConfig::default(),
             bar: BarConfig::default(),
+            bottom_bar: None,
         }
     }
 }
@@ -333,7 +337,14 @@ impl Config {
         if !(1..=100).contains(&self.logging.max_log_files) {
             return invalid("logging.max_log_files must be 1-100".into());
         }
-        let bar = self.bar.problems();
+        let mut bar = self.bar.problems();
+        if let Some(b) = &self.bottom_bar {
+            bar.extend(
+                b.problems()
+                    .into_iter()
+                    .map(|p| p.replacen("bar", "bottom_bar", 1)),
+            );
+        }
         if !bar.is_empty() {
             return invalid(bar.join("; "));
         }

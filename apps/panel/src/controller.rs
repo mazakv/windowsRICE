@@ -285,6 +285,8 @@ pub(crate) struct BarWin {
     /// Hidden for a fullscreen application.
     pub(crate) yielded: bool,
     pub(crate) hidden_modules: Vec<String>,
+    /// The bottom bar (Phase 14); `false` for the top bar.
+    pub(crate) bottom: bool,
 }
 
 pub(crate) struct PopupWin {
@@ -323,6 +325,9 @@ pub(crate) struct Controller {
     pub(crate) studio: Option<crate::studio_win::StudioWin>,
     /// Module panels: history, calendar, notices (Phase 13).
     pub(crate) ix: crate::interact::Interactive,
+    /// Style and legibility plan of the bottom bar, from its own
+    /// `[bottom_bar.style]` (Phase 14).
+    pub(crate) bottom_look: Option<(PanelStyle, windowsrice_ui::legibility::SurfacePlan)>,
 }
 
 pub(crate) fn system_mode(args: &Args) -> Option<Mode> {
@@ -481,7 +486,7 @@ impl Controller {
             &resolved.palette,
         );
         crate::stats::mark("theme_resolved");
-        let scheduler = Scheduler::start(hwnd, &config.bar.modules, !args.no_gpu_counter);
+        let scheduler = Scheduler::start(hwnd, &all_modules(&config), !args.no_gpu_counter);
         crate::stats::mark("providers_started");
         let mut c = Controller {
             hwnd,
@@ -508,6 +513,7 @@ impl Controller {
             suspended: false,
             studio: None,
             ix: Default::default(),
+            bottom_look: None,
         };
         c.refresh_clock_only();
         c.install_hooks();
@@ -638,9 +644,33 @@ impl Controller {
             ),
             &resolved.palette,
         );
+        self.bottom_look = self
+            .config()
+            .bottom_bar
+            .as_ref()
+            .filter(|b| b.enabled)
+            .and_then(|bb| {
+                let r = windowsrice_ui::style::with_bar_style(self.theme.applied()?, &bb.style);
+                let st = PanelStyle::from_theme(
+                    &r,
+                    window::high_contrast().as_ref(),
+                    window::animations_enabled() && bb.animations,
+                );
+                let pl = plan(
+                    &request(&r, &self.args, true, st.high_contrast, &bb.style),
+                    &r.palette,
+                );
+                Some((st, pl))
+            });
+        let bottom_style = self.bottom_look.as_ref().map(|l| l.0.clone());
         for b in &mut self.bars {
-            if fonts_changed
-                && let Ok(t) = TextSystem::new(font_config(&self.style, self.strings.lang))
+            let st = if b.bottom {
+                bottom_style.as_ref().unwrap_or(&self.style)
+            } else {
+                &self.style
+            };
+            if (fonts_changed || b.bottom)
+                && let Ok(t) = TextSystem::new(font_config(st, self.strings.lang))
             {
                 b.s.renderer.set_text(t);
             }
@@ -716,22 +746,31 @@ impl Controller {
         if startup {
             crate::stats::mark("monitor_identity_resolved");
         }
-        let bar_cfg = self.config().bar.clone();
         let connected: Vec<Option<&str>> = all.iter().map(|m| m.stable_id.as_deref()).collect();
-        let desired: Vec<monitors::MonitorInfo> = all
-            .iter()
-            .enumerate()
-            .filter(|(i, m)| match self.args.monitor {
-                Some(only) => *i == only,
-                None => bar_cfg.monitor_enabled_among(
-                    &m.device_name,
-                    m.stable_id.as_deref(),
-                    m.primary,
-                    &connected,
-                ),
-            })
-            .map(|(_, m)| m.clone())
-            .collect();
+        // (monitor, bottom) for every bar wanted: the top bar and, when
+        // enabled, the bottom bar (Phase 14), each with its own monitors.
+        let mut desired: Vec<(monitors::MonitorInfo, bool)> = Vec::new();
+        let cfgs = [
+            Some(self.config().bar.clone()).filter(|b| b.enabled),
+            self.config().bottom_bar.clone().filter(|b| b.enabled),
+        ];
+        for (bottom, cfg) in cfgs.iter().enumerate() {
+            let Some(bar_cfg) = cfg else { continue };
+            for (i, m) in all.iter().enumerate() {
+                let on = match self.args.monitor {
+                    Some(only) => i == only,
+                    None => bar_cfg.monitor_enabled_among(
+                        &m.device_name,
+                        m.stable_id.as_deref(),
+                        m.primary,
+                        &connected,
+                    ),
+                };
+                if on {
+                    desired.push((m.clone(), bottom == 1));
+                }
+            }
+        }
         self.monitor_signature = all
             .iter()
             .map(|m| {
@@ -746,21 +785,27 @@ impl Controller {
         // Remove bars whose monitor is gone or no longer configured.
         let mut i = 0;
         while i < self.bars.len() {
-            if desired.iter().any(|m| m.device_name == self.bars[i].device) {
+            if desired.iter().any(|(m, bottom)| {
+                m.device_name == self.bars[i].device && *bottom == self.bars[i].bottom
+            }) {
                 i += 1;
             } else {
                 let b = self.bars.remove(i);
                 self.destroy_bar(b, why);
             }
         }
-        for m in desired {
-            match self.bars.iter().position(|b| b.device == m.device_name) {
+        for (m, bottom) in desired {
+            match self
+                .bars
+                .iter()
+                .position(|b| b.device == m.device_name && b.bottom == bottom)
+            {
                 Some(i) => {
                     self.bars[i].monitor = m;
                     self.layout_bar(i, why);
                 }
                 None => {
-                    if let Err(e) = self.create_bar(m, why) {
+                    if let Err(e) = self.create_bar(m, why, bottom) {
                         self.stats.errors.push(e);
                     }
                 }
@@ -774,7 +819,12 @@ impl Controller {
         );
     }
 
-    fn create_bar(&mut self, m: monitors::MonitorInfo, why: &str) -> Result<(), String> {
+    fn create_bar(
+        &mut self,
+        m: monitors::MonitorInfo,
+        why: &str,
+        bottom: bool,
+    ) -> Result<(), String> {
         let hwnd = window::create(
             CLASS_BAR,
             w!("windowsRICE bar"),
@@ -786,7 +836,14 @@ impl Controller {
         if startup {
             crate::stats::mark("bar_window_created");
         }
-        let text = TextSystem::new(font_config(&self.style, self.strings.lang))
+        if bottom && self.bottom_look.is_none() {
+            self.restyle_bottom_only();
+        }
+        let st = match (&self.bottom_look, bottom) {
+            (Some(l), true) => l.0.clone(),
+            _ => self.style.clone(),
+        };
+        let text = TextSystem::new(font_config(&st, self.strings.lang))
             .map_err(|e| format!("DirectWrite: {e}"))?;
         if startup {
             crate::stats::mark("text_system_ready");
@@ -818,6 +875,7 @@ impl Controller {
             collapsed: false,
             yielded: false,
             hidden_modules: Vec::new(),
+            bottom,
         });
         let i = self.bars.len() - 1;
         self.stats.display_events.push(format!(
@@ -858,22 +916,38 @@ impl Controller {
             .iter()
             .map(|b| b.monitor.stable_id.as_deref())
             .collect();
-        self.config()
-            .bar
-            .height_for_among(&m.device_name, m.stable_id.as_deref(), &connected)
+        let bc = self.bar_conf(i);
+        bc.height_for_among(&m.device_name, m.stable_id.as_deref(), &connected)
             .map_or(self.style.height, f32::from)
     }
 
     /// Positions bar `i` on its monitor, negotiating the work area.
     pub(crate) fn layout_bar(&mut self, i: usize, why: &str) {
-        let reserve = self.config().bar.reserve_work_area && !self.config().bar.auto_hide;
-        let auto_hide = self.config().bar.auto_hide;
+        let bc = self.bar_conf(i);
+        let reserve = bc.reserve_work_area && !bc.auto_hide;
+        let auto_hide = bc.auto_hide;
+        let bottom = self.bars[i].bottom;
         let h_dip = self.bar_height(i);
         let b = &mut self.bars[i];
         let scale = self.args.scale.unwrap_or(b.monitor.dpi as f32 / 96.0);
         let dpi = (scale * 96.0).round() as u32;
         let monitor = phys(&b.monitor.rect);
-        let mut rect = bar_rect(monitor, scale, h_dip);
+        let mut rect = if bottom {
+            let work =
+                monitors::monitor_info(b.monitor.handle).map_or(monitor, |mi| phys(&mi.work));
+            // The work area already excludes this bar's own reservation.
+            let area = if b.appbar && b.rect.height() > 0 {
+                PhysRect {
+                    bottom: work.bottom.max(b.rect.bottom),
+                    ..work
+                }
+            } else {
+                work
+            };
+            windowsrice_ui::placement::bar_rect_bottom(area, scale, h_dip)
+        } else {
+            bar_rect(monitor, scale, h_dip)
+        };
         if reserve {
             if !b.appbar {
                 b.appbar = appbar::register(b.s.hwnd);
@@ -888,7 +962,11 @@ impl Controller {
                 crate::stats::mark("appbar_registered");
             }
             if b.appbar {
-                let granted = appbar::set_pos(b.s.hwnd, monitor, rect.height());
+                let granted = if bottom {
+                    appbar::set_pos_bottom(b.s.hwnd, monitor, rect.height())
+                } else {
+                    appbar::set_pos(b.s.hwnd, monitor, rect.height())
+                };
                 rect = granted;
                 if self.stats.ms_process_to_first_frame.is_none() {
                     crate::stats::mark("appbar_positioned");
@@ -911,7 +989,7 @@ impl Controller {
         b.s.scale = scale;
         b.s.dpi = dpi;
         let shown = if b.collapsed {
-            collapsed_rect(rect, COLLAPSED_PX)
+            strip(rect, b.bottom)
         } else {
             rect
         };
@@ -949,14 +1027,45 @@ impl Controller {
         let mut readings = self.readings.clone();
         readings.warnings = self.warnings();
         BarModel {
-            modules: self.config().bar.modules.clone(),
+            modules: self.bar_conf(i).modules.clone(),
             readings,
             focus: b.s.focus,
             keyboard_active: b.s.keyboard_active,
             hover: b.s.hover,
             popup_open: self.popup.as_ref().is_some_and(|p| p.owner == b.s.hwnd),
-            decor: windowsrice_ui::bar::Decor::from_style(&self.config().bar.style),
+            decor: windowsrice_ui::bar::Decor::from_style(&self.bar_conf(i).style),
         }
+    }
+
+    /// The configuration of bar `i`: `[bar]`, or `[bottom_bar]` for the
+    /// bottom bar.
+    pub(crate) fn bar_conf(&self, i: usize) -> &windowsrice_core::bar::BarConfig {
+        let c = self.config();
+        match (self.bars.get(i).is_some_and(|b| b.bottom), &c.bottom_bar) {
+            (true, Some(b)) => b,
+            _ => &c.bar,
+        }
+    }
+
+    fn restyle_bottom_only(&mut self) {
+        self.bottom_look = self
+            .config()
+            .bottom_bar
+            .as_ref()
+            .filter(|b| b.enabled)
+            .and_then(|bb| {
+                let r = windowsrice_ui::style::with_bar_style(self.theme.applied()?, &bb.style);
+                let st = PanelStyle::from_theme(
+                    &r,
+                    window::high_contrast().as_ref(),
+                    window::animations_enabled() && bb.animations,
+                );
+                let pl = plan(
+                    &request(&r, &self.args, true, st.high_contrast, &bb.style),
+                    &r.palette,
+                );
+                Some((st, pl))
+            });
     }
 
     fn rebuild_bar(&mut self, i: usize, reason: &'static str) {
@@ -973,15 +1082,19 @@ impl Controller {
             w: b.rect.width().max(1) as f32 / b.s.scale,
             h: b.rect.height().max(1) as f32 / b.s.scale,
         };
+        let (st, pl) = match (&self.bottom_look, b.bottom) {
+            (Some((s, p)), true) => (s, p),
+            _ => (&self.style, &self.plan),
+        };
         let bs = build_bar(
             &model,
-            &self.style,
-            &self.plan,
+            st,
+            pl,
             b.s.renderer.text(),
             size,
             b.s.scale,
             &self.strings,
-            f32::from(self.config().bar.spacing),
+            f32::from(self.bar_conf(i).spacing),
         );
         let origin = (b.rect.left, b.rect.top);
         let b = &mut self.bars[i];
@@ -1056,6 +1169,12 @@ impl Controller {
             return;
         }
         let model = self.popup_model();
+        let above = self.popup.as_ref().and_then(|p| {
+            self.bars
+                .iter()
+                .find(|b| b.s.hwnd == p.owner && b.bottom)
+                .map(|b| b.rect.top)
+        });
         let Some(p) = self.popup.as_mut() else { return };
         let ps = build_popup(
             &model,
@@ -1071,6 +1190,15 @@ impl Controller {
             self.stats.a11y_problems = problems;
         }
         let h = (ps.scene.size.h * p.s.scale).round() as i32;
+        // Above a bottom bar (Phase 14), below a top bar.
+        if let Some(bar_top) = above {
+            let top = bar_top - (4.0 * p.s.scale).round() as i32 - h;
+            if top != p.size.top {
+                p.size.top = top;
+                p.origin.1 = top;
+                p.size.bottom = top + h - 1;
+            }
+        }
         if h != p.size.height() {
             p.size.bottom = p.size.top + h;
             window::place(p.s.hwnd, p.size);
@@ -1193,7 +1321,7 @@ impl Controller {
             let _ = ShowWindow(b.s.hwnd, SW_SHOWNOACTIVATE);
         }
         let shown = if b.collapsed {
-            collapsed_rect(b.rect, COLLAPSED_PX)
+            strip(b.rect, b.bottom)
         } else {
             b.rect
         };
@@ -1576,7 +1704,7 @@ impl Controller {
     }
 
     fn activate_bar_element(&mut self, i: usize, id: ElementId) -> Deferred {
-        if Some(id) != menu_element(&self.config().bar.modules) {
+        if Some(id) != menu_element(&self.bar_conf(i).modules) {
             return self.module_activated(i, id);
         }
         self.bars[i].s.focus = Some(id);
@@ -1596,7 +1724,7 @@ impl Controller {
             if self.bars[i].collapsed {
                 self.expand_bar(i);
             }
-            let menu = menu_element(&self.config().bar.modules);
+            let menu = menu_element(&self.bar_conf(i).modules);
             let hit = self.bars[i].s.tree_hit(x, y).filter(|h| {
                 Some(*h) == menu
                     || self.bars[i]
@@ -1645,7 +1773,7 @@ impl Controller {
             let hit = self.bars[i].s.tree_hit(x, y);
             self.bars[i].s.pending_input = Some(Instant::now());
             return match hit {
-                Some(id) if Some(id) == menu_element(&self.config().bar.modules) => {
+                Some(id) if Some(id) == menu_element(&self.bar_conf(i).modules) => {
                     self.activate_bar_element(i, id)
                 }
                 Some(id) => self.module_activated(i, id),
@@ -1721,7 +1849,7 @@ impl Controller {
             SetTimer(
                 Some(self.bars[i].s.hwnd),
                 TIMER_AUTOHIDE,
-                self.config().bar.auto_hide_delay_ms,
+                self.bar_conf(i).auto_hide_delay_ms,
                 None,
             )
         };
@@ -1733,7 +1861,7 @@ impl Controller {
             let _ = KillTimer(Some(self.bars[i].s.hwnd), TIMER_AUTOHIDE);
         }
         let b = &self.bars[i];
-        if !self.config().bar.auto_hide
+        if !self.bar_conf(i).auto_hide
             || b.collapsed
             || b.s.keyboard_active
             || self.popup.as_ref().is_some_and(|p| p.owner == b.s.hwnd)
@@ -1753,7 +1881,7 @@ impl Controller {
         }
         let b = &mut self.bars[i];
         b.collapsed = true;
-        window::place(b.s.hwnd, collapsed_rect(b.rect, COLLAPSED_PX));
+        window::place(b.s.hwnd, strip(b.rect, b.bottom));
         self.stats.autohide_events.push(format!(
             "{:.2}s {} collapsed",
             self.stats.now_s(),
@@ -2093,12 +2221,27 @@ impl Controller {
             }
         });
         // Apply: scheduler intervals, bars on monitors, positions, modules.
-        self.scheduler.reconfigure(&self.config().bar.modules);
+        self.scheduler.reconfigure(&all_modules(self.config()));
         self.sync_bars("settings");
         self.rebuild_all("settings");
     }
 
     // ------------------------------------------------------------ system events
+
+    /// Explorer restarted: its AppBar registrations are gone, so every bar
+    /// registers and reserves its strip again.
+    pub fn on_taskbar_created(&mut self) {
+        self.stats.appbar_events.push(format!(
+            "{:.2}s TaskbarCreated: registering again",
+            self.stats.now_s()
+        ));
+        for i in 0..self.bars.len() {
+            self.bars[i].appbar = false;
+            self.bars[i].rect = PhysRect::default();
+            self.layout_bar(i, "explorer restarted");
+        }
+        self.render_all();
+    }
 
     pub fn on_display_change(&mut self, why: &'static str) {
         // Debounce bursts of display messages.
@@ -2445,5 +2588,23 @@ pub fn run_deferred(d: Deferred) {
         Deferred::OpenDesign => crate::design_io::run_open_design(),
         Deferred::SaveDesign(name) => crate::design_io::run_save_design(&name),
         Deferred::PickColor(c) => crate::studio_win::run_pick_color(c),
+    }
+}
+
+/// Modules of every enabled bar (the scheduler samples their sources).
+pub(crate) fn all_modules(c: &Config) -> Vec<windowsrice_core::bar::ModuleConfig> {
+    let mut m = c.bar.modules.clone();
+    if let Some(b) = c.bottom_bar.as_ref().filter(|b| b.enabled) {
+        m.extend(b.modules.iter().cloned());
+    }
+    m
+}
+
+/// The collapsed auto-hide strip of a bar (top or bottom edge).
+fn strip(full: PhysRect, bottom: bool) -> PhysRect {
+    if bottom {
+        windowsrice_ui::placement::collapsed_rect_bottom(full, COLLAPSED_PX)
+    } else {
+        collapsed_rect(full, COLLAPSED_PX)
     }
 }

@@ -94,7 +94,7 @@ Check 'notification center explains why Windows notifications are not readable' 
 Check 'no invented notification count (no windowsRICE notices yet)' ((ById $ph 'notif:app').Current.Name -eq 'windowsRICE notices (0 unread)') (ById $ph 'notif:app').Current.Name
 Close-Panel
 
-[void][PV.W]::PostMessageW((Win 'windowsRICE.Controller'), 0x8001, [IntPtr]::Zero, [IntPtr]::Zero)
+[void][PV.W]::PostMessageW((Win 'windowsRICE.Controller'), 0x8005, [IntPtr]::Zero, [IntPtr]::Zero)
 Start-Sleep -Seconds 1
 Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
 Start-Sleep -Milliseconds 500

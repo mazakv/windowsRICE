@@ -657,6 +657,12 @@ impl Controller {
     /// Rebuilds an open panel (live values).
     pub(crate) fn rebuild_panel(&mut self, kind: PanelKind) {
         let mut model = self.panel_model(kind);
+        let above = self.popup.as_ref().and_then(|p| {
+            self.bars
+                .iter()
+                .find(|b| b.s.hwnd == p.owner && b.bottom)
+                .map(|b| b.rect.top)
+        });
         let Some(p) = self.popup.as_mut() else { return };
         model.hover = p.s.hover;
         let ps = build_panel(
@@ -676,6 +682,15 @@ impl Controller {
             self.stats.a11y_problems = problems;
         }
         let h = (ps.scene.size.h * p.s.scale).round() as i32;
+        // Above a bottom bar (Phase 14), below a top bar.
+        if let Some(bar_top) = above {
+            let top = bar_top - (4.0 * p.s.scale).round() as i32 - h;
+            if top != p.size.top {
+                p.size.top = top;
+                p.origin.1 = top;
+                p.size.bottom = top + h - 1;
+            }
+        }
         if h != p.size.height() {
             p.size.bottom = p.size.top + h;
             window::place(p.s.hwnd, p.size);

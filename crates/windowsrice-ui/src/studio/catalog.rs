@@ -1557,6 +1557,7 @@ mod tests {
         Draft {
             theme: ThemeSelection::default(),
             bar: BarConfig::default(),
+            ..Default::default()
         }
     }
 

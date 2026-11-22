@@ -1,7 +1,8 @@
 //! Work-area reservation through the Windows application desktop toolbar
 //! interface (`SHAppBarMessage`).
 //!
-//! A registered bar asks the shell for a position on the top edge of its
+//! A registered bar asks the shell for a position on the top (or, for the
+//! Phase 14 bottom bar, the bottom) edge of its
 //! monitor (`ABM_QUERYPOS`, which accounts for the taskbar and other
 //! toolbars already there), then claims it (`ABM_SETPOS`). The shell removes
 //! that strip from the monitor's work area, so maximised windows start below
@@ -12,8 +13,8 @@
 
 use windows::Win32::Foundation::{HWND, LPARAM, RECT};
 use windows::Win32::UI::Shell::{
-    ABE_TOP, ABM_ACTIVATE, ABM_NEW, ABM_QUERYPOS, ABM_REMOVE, ABM_SETPOS, ABM_WINDOWPOSCHANGED,
-    APPBARDATA, SHAppBarMessage,
+    ABE_BOTTOM, ABE_TOP, ABM_ACTIVATE, ABM_NEW, ABM_QUERYPOS, ABM_REMOVE, ABM_SETPOS,
+    ABM_WINDOWPOSCHANGED, APPBARDATA, SHAppBarMessage,
 };
 use windows::Win32::UI::WindowsAndMessaging::WM_APP;
 use windowsrice_ui::PhysRect;
@@ -33,6 +34,31 @@ fn data(hwnd: HWND) -> APPBARDATA {
         uCallbackMessage: WM_APP_APPBAR,
         uEdge: ABE_TOP,
         ..Default::default()
+    }
+}
+
+/// Claims the bottom `height` pixels of `monitor` (Phase 14 bottom bar).
+/// The shell moves the request above the taskbar and other bottom toolbars.
+pub fn set_pos_bottom(hwnd: HWND, monitor: PhysRect, height: i32) -> PhysRect {
+    let mut d = data(hwnd);
+    d.uEdge = ABE_BOTTOM;
+    d.rc = RECT {
+        left: monitor.left,
+        top: monitor.bottom - height,
+        right: monitor.right,
+        bottom: monitor.bottom,
+    };
+    // SAFETY: position negotiation for our own registration.
+    unsafe {
+        SHAppBarMessage(ABM_QUERYPOS, &raw mut d);
+        d.rc.top = d.rc.bottom - height;
+        SHAppBarMessage(ABM_SETPOS, &raw mut d);
+    }
+    PhysRect {
+        left: d.rc.left,
+        top: d.rc.bottom - height,
+        right: d.rc.right,
+        bottom: d.rc.bottom,
     }
 }
 

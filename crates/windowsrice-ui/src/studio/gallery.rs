@@ -1232,6 +1232,42 @@ pub(super) fn layout(u: &mut Ui, g: ElementId, r: Rect) {
             "배치는 모듈을 왼쪽, 가운데, 오른쪽 그룹으로 옮깁니다. 그룹 안의 순서는 가능한 한 유지합니다.",
         ),
     );
+    // Top and bottom bars (Phase 14): every page edits the bar chosen here.
+    let d = &m.draft;
+    let bottom_on = d.bottom().is_some_and(|b| b.enabled);
+    let half = ((r.w - 16.0) / 2.0).min(300.0);
+    u.radio(
+        g,
+        "bars:top",
+        Rect::new(r.x, y, half, ROW),
+        t(lang, "Edit the top bar", "위쪽 바 편집"),
+        !d.editing_bottom,
+        StudioAction::EditBottomBar(false),
+    );
+    u.radio(
+        g,
+        "bars:bottom",
+        Rect::new(r.x + half + 16.0, y, half, ROW),
+        t(lang, "Edit the bottom bar", "아래쪽 바 편집"),
+        d.editing_bottom,
+        StudioAction::EditBottomBar(true),
+    );
+    y += ROW + 6.0;
+    u.toggle(
+        g,
+        "bars:show-bottom",
+        Rect::new(r.x, y, (r.w - 16.0) / 2.0, ROW),
+        t(lang, "Show the bottom bar", "아래쪽 바 표시"),
+        bottom_on,
+        true,
+        Some(t(
+            lang,
+            "A second bar at the bottom of the screen, with its own modules and look. It sits above the Windows taskbar and never replaces it.",
+            "화면 아래쪽의 두 번째 바로, 모듈과 모양을 따로 정합니다. Windows 작업 표시줄 위에 놓이며 이를 대신하지 않습니다.",
+        )),
+        StudioAction::ToggleBottomBar,
+    );
+    y += ROW + 18.0;
     y = catalog_grid(u, g, r.x, y, r.w, Gallery::Layout, 250.0) + 18.0;
     y = subheading(
         u,
