@@ -20,6 +20,7 @@
 
 mod device;
 mod error;
+mod image;
 mod text;
 
 pub use device::{FrameStats, RenderInfo, Renderer};

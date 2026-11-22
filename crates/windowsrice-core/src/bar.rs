@@ -566,6 +566,10 @@ pub struct BarStyle {
     /// library's generated asset id, never a path.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub background_asset: Option<String>,
+    /// Video background: the frame shown, milliseconds from the start
+    /// (Phase 14; the first frame when unset).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub background_poster_ms: Option<u32>,
 }
 
 /// A design-library asset id: 1–64 lowercase letters, digits and `-`.

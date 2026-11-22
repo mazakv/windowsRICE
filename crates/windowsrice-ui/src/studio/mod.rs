@@ -62,13 +62,15 @@ pub enum Section {
     Import,
     /// Colour animations and their timeline (Phase 14).
     Motion,
+    /// Background image or video (Phase 14).
+    Media,
     Advanced,
 }
 
 impl Section {
     /// Every page reachable from the navigation. `Home` (before Phase 12)
     /// is no longer listed: Templates is the starting page.
-    pub const ALL: [Section; 13] = [
+    pub const ALL: [Section; 14] = [
         Section::Styles,
         Section::Themes,
         Section::Colors,
@@ -81,6 +83,7 @@ impl Section {
         Section::Presets,
         Section::Import,
         Section::Motion,
+        Section::Media,
         Section::Advanced,
     ];
     pub fn name(self, lang: Lang) -> &'static str {
@@ -98,6 +101,7 @@ impl Section {
             Section::Presets => ("My designs", "내 디자인"),
             Section::Import => ("Import design code", "디자인 코드 가져오기"),
             Section::Motion => ("Animation", "애니메이션"),
+            Section::Media => ("Image and video", "이미지와 동영상"),
             Section::Advanced => ("Advanced", "고급"),
         };
         if lang == Lang::En { en } else { ko }
@@ -117,6 +121,7 @@ impl Section {
             Section::Presets => "\u{E74E}",
             Section::Import => "\u{E8B5}",
             Section::Motion => "\u{E768}",
+            Section::Media => "\u{E8B9}",
             Section::Advanced => "\u{E713}",
         }
     }
@@ -135,6 +140,7 @@ impl Section {
             Section::Presets => "presets",
             Section::Import => "import",
             Section::Motion => "motion",
+            Section::Media => "media",
             Section::Advanced => "advanced",
         }
     }
@@ -165,6 +171,10 @@ impl Section {
                 "완성된 디자인 저장과 공유",
             ),
             Section::Motion => ("Animated colours and gradients", "움직이는 색과 그라데이션"),
+            Section::Media => (
+                "Background picture or video frame",
+                "배경 그림 또는 동영상 프레임",
+            ),
             Section::Import => (
                 "Check and import shared designs",
                 "공유된 디자인 검사 및 가져오기",
@@ -207,7 +217,7 @@ impl Group {
                 Section::Typography,
                 Section::Icons,
             ],
-            Group::Motion => &[Section::Effects, Section::Motion],
+            Group::Motion => &[Section::Effects, Section::Motion, Section::Media],
             Group::MyDesigns => &[Section::Presets, Section::Import],
             Group::Advanced => &[Section::Advanced],
         }
@@ -965,6 +975,10 @@ pub struct StudioModel {
     pub motion_target: windowsrice_core::motion::AnimTarget,
     pub motion_key: Option<usize>,
     pub motion_scrub: u8,
+    /// Background file of the draft and what its header says (Phase 14):
+    /// (library path, video frame), and (is video, width, height, length ms).
+    pub background_file: Option<(String, u32)>,
+    pub media_info: Option<(bool, u32, u32, u64)>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -1071,6 +1085,11 @@ pub enum StudioAction {
     ),
     MotionWrap(windowsrice_core::motion::AnimTarget),
     MotionSpeed(windowsrice_core::motion::AnimTarget, i32),
+    /// Media page (Phase 14): choose a file, remove it, move the video
+    /// poster frame by a number of milliseconds (within the video length).
+    MediaChoose,
+    MediaRemove,
+    MediaPoster(i32, u32),
     /// Show or hide the bottom bar.
     ToggleBottomBar,
     ToggleReserve,
@@ -2246,6 +2265,7 @@ fn build_once(
             modules: model.draft.bar.modules.clone(),
             readings: model.readings.clone(),
             decor: Decor::from_style(&model.draft.bar.style),
+            background_file: model.background_file.clone(),
             anim_ms: (model.section == Section::Motion).then(|| {
                 let d = model
                     .draft
@@ -2348,6 +2368,7 @@ fn build_once(
         Section::Presets => presets(&mut u, body, content),
         Section::Import => import_page(&mut u, body, content),
         Section::Motion => motion_page(&mut u, body, content),
+        Section::Media => media_page(&mut u, body, content),
         Section::Advanced => gallery::advanced(&mut u, body, content),
     }
     u.clip = None;
@@ -3756,7 +3777,7 @@ fn legacy_properties(u: &mut Ui, g: ElementId, r: Rect) {
             u.button(
                 g,
                 "props:use",
-                Rect::new(r.x, y, w, 36.0),
+                Rect::new(r.x, y, (w - 8.0) / 2.0, 36.0),
                 Some("\u{E73E}"),
                 if active {
                     t(lang, "In use", "사용 중")
@@ -3768,11 +3789,10 @@ fn legacy_properties(u: &mut Ui, g: ElementId, r: Rect) {
                 !active,
                 StudioAction::UseTheme(e.id.clone()),
             );
-            y += 42.0;
             u.button(
                 g,
                 "props:dup",
-                Rect::new(r.x, y, w, 34.0),
+                Rect::new(r.x + (w + 8.0) / 2.0, y, (w - 8.0) / 2.0, 36.0),
                 Some("\u{E8C8}"),
                 t(lang, "Duplicate", "복제"),
                 &match lang {
@@ -3800,6 +3820,37 @@ fn legacy_properties(u: &mut Ui, g: ElementId, r: Rect) {
                 t(lang, "Name", "이름"),
             );
             y += 38.0;
+            // Save and Delete right under the name, so they are always
+            // reachable (small windows cut off the bottom of this panel).
+            {
+                let half = (w - 8.0) / 2.0;
+                u.button(
+                    g,
+                    "props:tsave",
+                    Rect::new(r.x, y, half, 34.0),
+                    Some("\u{E74E}"),
+                    t(lang, "Save theme", "테마 저장"),
+                    t(lang, "Save the theme file", "테마 파일 저장"),
+                    Kind::Primary,
+                    ed.dirty && ed.errors.is_empty(),
+                    StudioAction::SaveTheme,
+                );
+                u.button(
+                    g,
+                    "props:tdelete",
+                    Rect::new(r.x + half + 8.0, y, half, 34.0),
+                    Some("\u{E74D}"),
+                    t(lang, "Delete", "삭제"),
+                    &match lang {
+                        Lang::En => format!("Delete {} (asks first)", e.name),
+                        Lang::Ko => format!("{} 삭제 (먼저 확인)", e.name),
+                    },
+                    Kind::Danger,
+                    !active,
+                    StudioAction::DeleteTheme(e.id.clone()),
+                );
+            }
+            y += 42.0;
             let half = (w - 8.0) / 2.0;
             u.radio(
                 g,
@@ -3818,7 +3869,9 @@ fn legacy_properties(u: &mut Ui, g: ElementId, r: Rect) {
                 StudioAction::ThemeDark(false),
             );
             y += 34.0;
-            for (key, label, value) in [
+            // Three colours side by side (fits small windows).
+            let cw = (w - 16.0) / 3.0;
+            for (i, (key, label, value)) in [
                 (
                     "field:theme-bg",
                     t(lang, "Background (#RRGGBB)", "배경 (#RRGGBB)"),
@@ -3834,20 +3887,17 @@ fn legacy_properties(u: &mut Ui, g: ElementId, r: Rect) {
                     t(lang, "Text (#RRGGBB)", "텍스트 (#RRGGBB)"),
                     &ed.text,
                 ),
-            ] {
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                let x = r.x + i as f32 * (cw + 8.0);
                 if let Some(c) = hex_color(value) {
-                    u.fill(Rect::new(r.x, y + 4.0, 24.0, 24.0), 5.0, c, g);
+                    u.fill(Rect::new(x, y + 34.0, cw, 4.0), 2.0, c, g);
                 }
-                u.field(
-                    g,
-                    key,
-                    Rect::new(r.x + 32.0, y, w - 32.0, 32.0),
-                    label,
-                    value,
-                    "#RRGGBB",
-                );
-                y += 36.0;
+                u.field(g, key, Rect::new(x, y, cw, 32.0), label, value, "#RRGGBB");
             }
+            y += 44.0;
             let third = (w - 8.0) / 3.0;
             for (i, (bd, en, ko)) in [
                 (windowsrice_theme::schema::Backdrop::None, "Solid", "불투명"),
@@ -3905,34 +3955,6 @@ fn legacy_properties(u: &mut Ui, g: ElementId, r: Rect) {
                     u.s.warning,
                 );
                 y += 20.0;
-            }
-            let half = (w - 8.0) / 2.0;
-            if y + 34.0 <= r.bottom() {
-                u.button(
-                    g,
-                    "props:tsave",
-                    Rect::new(r.x, y, half, 34.0),
-                    Some("\u{E74E}"),
-                    t(lang, "Save theme", "테마 저장"),
-                    t(lang, "Save the theme file", "테마 파일 저장"),
-                    Kind::Primary,
-                    ed.dirty && ed.errors.is_empty(),
-                    StudioAction::SaveTheme,
-                );
-                u.button(
-                    g,
-                    "props:tdelete",
-                    Rect::new(r.x + half + 8.0, y, half, 34.0),
-                    Some("\u{E74D}"),
-                    t(lang, "Delete", "삭제"),
-                    &match lang {
-                        Lang::En => format!("Delete {} (asks first)", e.name),
-                        Lang::Ko => format!("{} 삭제 (먼저 확인)", e.name),
-                    },
-                    Kind::Danger,
-                    !active,
-                    StudioAction::DeleteTheme(e.id.clone()),
-                );
             }
         }
         Section::Presets => {
@@ -4125,6 +4147,20 @@ pub fn apply_draft_action(
 ) -> bool {
     use crate::popup::step_interval;
     let before = d.clone();
+    match a {
+        StudioAction::MediaRemove => {
+            d.bar.style.background_asset = None;
+            d.bar.style.background_poster_ms = None;
+            return *d != before;
+        }
+        StudioAction::MediaPoster(delta, max) => {
+            let cur = i64::from(d.bar.style.background_poster_ms.unwrap_or(0));
+            let v = (cur + i64::from(*delta)).clamp(0, i64::from(*max));
+            d.bar.style.background_poster_ms = Some(v as u32);
+            return *d != before;
+        }
+        _ => {}
+    }
     if let Some(changed) = motion_edit(d, a) {
         return changed && *d != before;
     }
@@ -5035,4 +5071,140 @@ fn motion_page(u: &mut Ui, g: ElementId, r: Rect) {
         StudioAction::MotionSpeed(target, 1000),
     );
     u.content_bottom = u.content_bottom.max(y + 48.0);
+}
+
+fn media_page(u: &mut Ui, g: ElementId, r: Rect) {
+    let lang = u.lang;
+    let m = u.m;
+    let mut y = section_title(
+        u,
+        g,
+        r,
+        t(lang, "Image and video", "이미지와 동영상"),
+        t(
+            lang,
+            "A picture or a frame of a video behind the bar. Files are checked by their content (PNG, JPEG, MP4 only), limited in size, resolution and length, and copied into the design library under a generated name. In this version a video is shown as the still frame you choose; continuous playback is not available.",
+            "바 뒤에 그림이나 동영상의 한 프레임을 둡니다. 파일은 내용으로 검사하며(PNG, JPEG, MP4만), 크기·해상도·길이를 제한하고 생성된 이름으로 디자인 라이브러리에 복사합니다. 이 버전은 동영상을 고른 정지 프레임으로 보여 주며, 계속 재생은 지원하지 않습니다.",
+        ),
+    );
+    let bw = ((r.w - 8.0) / 2.0).min(240.0);
+    u.button(
+        g,
+        "media:choose",
+        Rect::new(r.x, y, bw, 34.0),
+        Some("\u{E8E5}"),
+        t(lang, "Choose image or video…", "이미지나 동영상 고르기…"),
+        t(lang, "Choose image or video", "이미지나 동영상 고르기"),
+        Kind::Primary,
+        true,
+        StudioAction::MediaChoose,
+    );
+    let has = m.draft.bar.style.background_asset.is_some();
+    u.button(
+        g,
+        "media:remove",
+        Rect::new(r.x + bw + 8.0, y, bw, 34.0),
+        Some("\u{E74D}"),
+        t(lang, "Remove background", "배경 제거"),
+        t(lang, "Remove background", "배경 제거"),
+        Kind::Secondary,
+        has,
+        StudioAction::MediaRemove,
+    );
+    y += 46.0;
+    let info = match (&m.media_info, has, lang) {
+        (_, false, Lang::En) => "No background image or video.".to_owned(),
+        (_, false, Lang::Ko) => "배경 이미지나 동영상이 없습니다.".to_owned(),
+        (None, true, Lang::En) => {
+            "The background file is missing from the design library.".to_owned()
+        }
+        (None, true, Lang::Ko) => "디자인 라이브러리에 배경 파일이 없습니다.".to_owned(),
+        (Some((false, w, h, _)), true, Lang::En) => format!("Image, {w}×{h} pixels."),
+        (Some((false, w, h, _)), true, Lang::Ko) => format!("이미지, {w}×{h} 픽셀."),
+        (Some((true, w, h, ms)), true, Lang::En) => {
+            format!("Video, {w}×{h}, {:.1} s.", *ms as f64 / 1000.0)
+        }
+        (Some((true, w, h, ms)), true, Lang::Ko) => {
+            format!("동영상, {w}×{h}, {:.1}초.", *ms as f64 / 1000.0)
+        }
+    };
+    u.label(
+        g,
+        "media:info",
+        Rect::new(r.x, y, r.w, 24.0),
+        &info,
+        13.0,
+        400,
+        u.s.text,
+    );
+    y += 34.0;
+    if let Some((true, _, _, ms)) = m.media_info.filter(|_| has) {
+        let max = u32::try_from(ms).unwrap_or(u32::MAX);
+        let at = m.draft.bar.style.background_poster_ms.unwrap_or(0);
+        let label = match lang {
+            Lang::En => format!(
+                "Frame shown: {:.2} s of {:.1} s",
+                f64::from(at) / 1000.0,
+                ms as f64 / 1000.0
+            ),
+            Lang::Ko => format!(
+                "표시 프레임: {:.1}초 중 {:.2}초",
+                ms as f64 / 1000.0,
+                f64::from(at) / 1000.0
+            ),
+        };
+        let steps: [(&str, &str, &str, &str, i32); 4] = [
+            (
+                "media:back-1s",
+                "\u{E892}",
+                "1 second earlier",
+                "1초 앞",
+                -1000,
+            ),
+            (
+                "media:back-frame",
+                "\u{E76B}",
+                "One frame earlier",
+                "한 프레임 앞",
+                -40,
+            ),
+            (
+                "media:on-frame",
+                "\u{E76C}",
+                "One frame later",
+                "한 프레임 뒤",
+                40,
+            ),
+            ("media:on-1s", "\u{E893}", "1 second later", "1초 뒤", 1000),
+        ];
+        for (i, (key, glyph, en, ko, d)) in steps.iter().enumerate() {
+            let x = if i < 2 {
+                r.x + i as f32 * 40.0
+            } else {
+                r.x + 340.0 + (i - 2) as f32 * 40.0
+            };
+            u.button(
+                g,
+                key,
+                Rect::new(x, y, 32.0, 32.0),
+                Some(glyph),
+                "",
+                t(lang, en, ko),
+                Kind::Secondary,
+                true,
+                StudioAction::MediaPoster(*d, max),
+            );
+        }
+        u.label(
+            g,
+            "media:frame",
+            Rect::new(r.x + 84.0, y, 250.0, 32.0),
+            &label,
+            13.0,
+            400,
+            u.s.text,
+        );
+        y += 44.0;
+    }
+    u.content_bottom = u.content_bottom.max(y + 12.0);
 }

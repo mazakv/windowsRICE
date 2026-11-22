@@ -128,6 +128,8 @@ pub enum Deferred {
     /// Native file dialogs for design import and .ricepack export (Phase 12).
     OpenDesign,
     SaveDesign(String),
+    /// Open dialog for a background image or video (Phase 14).
+    OpenMedia,
     /// Windows colour dialog, starting at this `COLORREF`.
     PickColor(u32),
 }
@@ -1035,7 +1037,27 @@ impl Controller {
             popup_open: self.popup.as_ref().is_some_and(|p| p.owner == b.s.hwnd),
             decor: windowsrice_ui::bar::Decor::from_style(&self.bar_conf(i).style),
             anim_ms: self.anim_ms(),
+            background_file: self.background_file(&self.bar_conf(i).style),
         }
+    }
+
+    /// The library file of a style's background image or video, with the
+    /// video frame to show (Phase 14). Asset ids are generated names, never
+    /// paths, so the file can only be inside the design library.
+    pub(crate) fn background_file(
+        &self,
+        s: &windowsrice_core::bar::BarStyle,
+    ) -> Option<(String, u32)> {
+        let id = s.background_asset.as_deref()?;
+        if !windowsrice_core::bar::is_valid_asset_id(id) {
+            return None;
+        }
+        let lib = self.library_dir()?;
+        ["png", "jpg", "mp4"]
+            .iter()
+            .map(|e| lib.join(format!("{id}.{e}")))
+            .find(|p| p.is_file())
+            .map(|p| (p.display().to_string(), s.background_poster_ms.unwrap_or(0)))
     }
 
     /// The configuration of bar `i`: `[bar]`, or `[bottom_bar]` for the
@@ -2593,6 +2615,7 @@ pub fn run_deferred(d: Deferred) {
         Deferred::SaveFile(name) => crate::studio_win::run_save_file(&name),
         Deferred::OpenDesign => crate::design_io::run_open_design(),
         Deferred::SaveDesign(name) => crate::design_io::run_save_design(&name),
+        Deferred::OpenMedia => crate::design_io::run_open_media(),
         Deferred::PickColor(c) => crate::studio_win::run_pick_color(c),
     }
 }

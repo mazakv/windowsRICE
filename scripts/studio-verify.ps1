@@ -141,13 +141,13 @@ function Reveal([string]$id) {
     $e = ByIdRaw (Root $sh2) $id; if ($e) { return $e }
     # Back to the top first (the element may be above the visible part).
     $r = New-Object WSV.W+RECT; [void][WSV.W]::GetWindowRect($sh2, [ref]$r)
-    $x = [int](($r.L + $r.R) / 2) - 200; $y = [int](($r.T + $r.B) / 2) + 200
+    $x = [int]($r.L + ($r.R - $r.L) * 0.45); $y = [int]($r.B - 80)
     for ($k = 0; $k -lt 40; $k++) { [void][WSV.W]::PostMessageW($sh2, 0x020A, [IntPtr]([int](120 -band 0xFFFF) -shl 16), [IntPtr](($y -shl 16) -bor ($x -band 0xFFFF))) }
     Start-Sleep -Milliseconds 600
     for ($k = 0; $k -lt 30; $k++) {
         $e = ByIdRaw (Root $sh2) $id; if ($e) { return $e }
         $r = New-Object WSV.W+RECT; [void][WSV.W]::GetWindowRect($sh2, [ref]$r)
-        $x = [int](($r.L + $r.R) / 2) - 200; $y = [int](($r.T + $r.B) / 2) + 200
+        $x = [int]($r.L + ($r.R - $r.L) * 0.45); $y = [int]($r.B - 80)
         [void][WSV.W]::PostMessageW($sh2, 0x020A, [IntPtr]([int](-120 -band 0xFFFF) -shl 16), [IntPtr](($y -shl 16) -bor ($x -band 0xFFFF)))
         Start-Sleep -Milliseconds 250
     }

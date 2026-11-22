@@ -763,3 +763,118 @@ impl Controller {
             .unwrap_or_default()
     }
 }
+
+fn open_media_dialog(owner: HWND, title: &str) -> Option<PathBuf> {
+    // SAFETY: as in `open_design_dialog`.
+    unsafe {
+        let d: IFileOpenDialog =
+            CoCreateInstance(&FileOpenDialog, None, CLSCTX_INPROC_SERVER).ok()?;
+        let filters = [COMDLG_FILTERSPEC {
+            pszName: w!("Images and videos (*.png; *.jpg; *.jpeg; *.mp4)"),
+            pszSpec: w!("*.png;*.jpg;*.jpeg;*.mp4"),
+        }];
+        let _ = d.SetFileTypes(&filters);
+        let _ = d.SetTitle(&HSTRING::from(title));
+        d.Show(Some(owner)).ok()?;
+        let item = d.GetResult().ok()?;
+        let p = item.GetDisplayName(SIGDN_FILESYSPATH).ok()?;
+        let s = p.to_string().ok();
+        CoTaskMemFree(Some(p.0.cast()));
+        s.map(PathBuf::from)
+    }
+}
+
+/// Media page: choose a background image or video (Phase 14).
+pub fn run_open_media() {
+    let Some(owner) = crate::controller::with_ctl(|c| c.studio_hwnd()).flatten() else {
+        return;
+    };
+    if let Some(path) = open_media_dialog(owner, "Choose a background image or video") {
+        crate::controller::with_ctl(|c| {
+            c.import_media(&path);
+            c.studio_rebuild();
+        });
+    }
+}
+
+impl Controller {
+    /// Checks a chosen image or video by its content and limits, copies it
+    /// into the design library under a generated name and uses it as the
+    /// draft's background. Nothing is applied until Apply.
+    pub(crate) fn import_media(&mut self, path: &Path) {
+        let name = path
+            .file_name()
+            .map(|f| f.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let len = std::fs::metadata(path).map(|m| m.len()).unwrap_or(u64::MAX);
+        if len > design_pack::MAX_VIDEO_BYTES as u64 {
+            self.say(
+                "The file is too large (videos up to 48 MB, images up to 16 MB).",
+                "파일이 너무 큽니다 (동영상 48MB, 이미지 16MB까지).",
+                Severity::Error,
+            );
+            return;
+        }
+        let data = match std::fs::read(path) {
+            Ok(d) => d,
+            Err(e) => {
+                self.studio_status(e.to_string(), Severity::Error);
+                return;
+            }
+        };
+        // The package rules apply: the content decides, not the extension.
+        let check_name = format!("assets/{}", name.to_ascii_lowercase());
+        let info = match design_pack::check_media(&check_name, &data) {
+            Ok(i) => i,
+            Err(e) => {
+                let (en, ko) = (format!("Not used: {e}."), format!("사용하지 않음: {e}."));
+                self.say(&en, &ko, Severity::Error);
+                return;
+            }
+        };
+        let Some(lib) = self.library_dir() else {
+            return;
+        };
+        let _ = std::fs::create_dir_all(&lib);
+        let id = design_pack::library_id(&data, info.kind);
+        let target = design_pack::library_file(&lib, &id, info.kind, &check_name);
+        if !target.exists()
+            && let Err(e) = write_atomic(&target, &data)
+        {
+            self.studio_status(e.to_string(), Severity::Error);
+            return;
+        }
+        self.studio_edit(|d| {
+            d.bar.style.background_asset = Some(id.clone());
+            d.bar.style.background_poster_ms = None;
+            true
+        });
+        let (en, ko) = match info.duration_ms {
+            Some(ms) => (
+                format!(
+                    "Video {}×{}, {:.1} s: its first frame is shown. Choose the frame below; Apply to use it.",
+                    info.width,
+                    info.height,
+                    ms as f64 / 1000.0
+                ),
+                format!(
+                    "동영상 {}×{}, {:.1}초: 첫 프레임을 보여 줍니다. 아래에서 프레임을 고르고 적용하세요.",
+                    info.width,
+                    info.height,
+                    ms as f64 / 1000.0
+                ),
+            ),
+            None => (
+                format!(
+                    "Image {}×{} is the background. Apply to use it.",
+                    info.width, info.height
+                ),
+                format!(
+                    "이미지 {}×{}가 배경입니다. 적용하면 사용됩니다.",
+                    info.width, info.height
+                ),
+            ),
+        };
+        self.say(&en, &ko, Severity::Success);
+    }
+}

@@ -53,6 +53,9 @@ pub struct BarModel {
     /// Milliseconds on the animation clock (Phase 14); `None` draws the
     /// animations' first frame (still).
     pub anim_ms: Option<u64>,
+    /// Background image or video file from the design library and the
+    /// video frame to show (Phase 14).
+    pub background_file: Option<(String, u32)>,
 }
 
 /// Everything in `[bar.style]` that is not a theme palette colour: module
@@ -711,6 +714,17 @@ pub fn build_bar(
             },
             owner: Some(ids::ROOT),
         }),
+    }
+    // Background image or video poster frame over the fill (Phase 14);
+    // text colours are still fitted to the surface colours.
+    if let Some((path, frame)) = &model.background_file {
+        draw.push(DrawCmd::Image {
+            rect: full,
+            path: path.clone(),
+            frame_ms: *frame,
+            opacity: plan.surface_opacity.clamp(0.0, 1.0),
+            owner: Some(ids::ROOT),
+        });
     }
     // Shading inside the lower edge and a highlight along the top edge.
     if d.shadow > 0.0 {

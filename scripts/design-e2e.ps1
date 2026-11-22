@@ -53,13 +53,13 @@ function IsSelected([string]$id) { $e = ById $id; $e -and $e.GetCurrentPattern([
 function Reveal([string]$id) {
     $e = ByIdRaw $id; if ($e) { return $e }
     $r = New-Object WDE.W+RECT; [void][WDE.W]::GetWindowRect((Studio), [ref]$r)
-    $x = [int](($r.L + $r.R) / 2) - 200; $y = [int](($r.T + $r.B) / 2) + 200
+    $x = [int]($r.L + ($r.R - $r.L) * 0.45); $y = [int]($r.B - 80)
     for ($k = 0; $k -lt 40; $k++) { [void][WDE.W]::PostMessageW((Studio), 0x020A, [IntPtr]([int](120 -band 0xFFFF) -shl 16), [IntPtr](($y -shl 16) -bor ($x -band 0xFFFF))) }
     Start-Sleep -Milliseconds 500
     for ($k = 0; $k -lt 30; $k++) {
         $e = ByIdRaw $id; if ($e) { return $e }
         $r = New-Object WDE.W+RECT; [void][WDE.W]::GetWindowRect((Studio), [ref]$r)
-        $x = [int](($r.L + $r.R) / 2) - 200; $y = [int](($r.T + $r.B) / 2) + 200
+        $x = [int]($r.L + ($r.R - $r.L) * 0.45); $y = [int]($r.B - 80)
         [void][WDE.W]::PostMessageW((Studio), 0x020A, [IntPtr]([int](-120 -band 0xFFFF) -shl 16), [IntPtr](($y -shl 16) -bor ($x -band 0xFFFF)))
         Start-Sleep -Milliseconds 250
     }

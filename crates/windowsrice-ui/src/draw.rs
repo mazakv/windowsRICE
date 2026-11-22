@@ -75,6 +75,16 @@ pub enum DrawCmd {
         rect: Rect,
     },
     PopClip,
+    /// An image file from the design library (Phase 14), scaled to cover
+    /// `rect` (cropped to keep its aspect ratio). For a video, the frame at
+    /// `frame_ms` is drawn (a still poster frame).
+    Image {
+        rect: Rect,
+        path: String,
+        frame_ms: u32,
+        opacity: f32,
+        owner: Option<ElementId>,
+    },
 }
 
 impl DrawCmd {
@@ -85,7 +95,8 @@ impl DrawCmd {
             | DrawCmd::Text { rect, .. }
             | DrawCmd::Wrapped { rect, .. }
             | DrawCmd::Gradient { rect, .. }
-            | DrawCmd::PushClip { rect } => *rect,
+            | DrawCmd::PushClip { rect }
+            | DrawCmd::Image { rect, .. } => *rect,
             DrawCmd::PopClip => Rect::default(),
         }
     }
@@ -96,7 +107,8 @@ impl DrawCmd {
             | DrawCmd::Stroke { owner, .. }
             | DrawCmd::Text { owner, .. }
             | DrawCmd::Wrapped { owner, .. }
-            | DrawCmd::Gradient { owner, .. } => *owner,
+            | DrawCmd::Gradient { owner, .. }
+            | DrawCmd::Image { owner, .. } => *owner,
             DrawCmd::PushClip { .. } | DrawCmd::PopClip => None,
         }
     }
@@ -204,6 +216,19 @@ pub fn transformed(cmds: &[DrawCmd], dx: f32, dy: f32, s: f32) -> Vec<DrawCmd> {
             },
             DrawCmd::PushClip { rect } => DrawCmd::PushClip { rect: tr(rect) },
             DrawCmd::PopClip => DrawCmd::PopClip,
+            DrawCmd::Image {
+                rect,
+                path,
+                frame_ms,
+                opacity,
+                owner,
+            } => DrawCmd::Image {
+                rect: tr(rect),
+                path: path.clone(),
+                frame_ms: *frame_ms,
+                opacity: *opacity,
+                owner: *owner,
+            },
         })
         .collect()
 }

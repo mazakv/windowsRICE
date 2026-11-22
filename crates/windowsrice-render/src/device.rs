@@ -81,6 +81,12 @@ struct Gpu {
     adapter: String,
     feature_level: u32,
     warp: bool,
+    /// Decoded background images and video frames (Phase 14), by file and
+    /// frame; `None` remembers a file that could not be decoded.
+    images: std::collections::HashMap<
+        (String, u32),
+        Option<windows::Win32::Graphics::Direct2D::ID2D1Bitmap1>,
+    >,
 }
 
 pub struct Renderer {
@@ -200,6 +206,7 @@ impl Gpu {
                 adapter,
                 feature_level: level.0.cast_unsigned(),
                 warp,
+                images: std::collections::HashMap::new(),
             };
             gpu.bind_target(dpi)?;
             Ok(gpu)
@@ -332,7 +339,7 @@ impl Renderer {
         if std::mem::take(&mut self.simulate_loss) {
             return Err(RenderError::DeviceLost("simulated".into()));
         }
-        let Some(gpu) = self.gpu.as_ref() else {
+        let Some(gpu) = self.gpu.as_mut() else {
             return Err(RenderError::DeviceLost("no device".into()));
         };
         let t0 = Instant::now();
@@ -476,6 +483,54 @@ impl Renderer {
                             &gpu.brush,
                             D2D1_DRAW_TEXT_OPTIONS_NONE,
                         );
+                    }
+                    DrawCmd::Image {
+                        rect,
+                        path,
+                        frame_ms,
+                        opacity,
+                        ..
+                    } => {
+                        let key = (path.clone(), *frame_ms);
+                        if !gpu.images.contains_key(&key) {
+                            let b = crate::image::load(&gpu.dc, path, *frame_ms).ok();
+                            if gpu.images.len() > 8 {
+                                gpu.images.clear();
+                            }
+                            gpu.images.insert(key.clone(), b);
+                        }
+                        if let Some(Some(bmp)) = gpu.images.get(&key) {
+                            // Cover: crop the source to the target's aspect ratio.
+                            let s = bmp.GetSize();
+                            let dst = to_d2d(*rect);
+                            let (dw, dh) = (dst.right - dst.left, dst.bottom - dst.top);
+                            let src = if dw > 0.0 && dh > 0.0 && s.width > 0.0 && s.height > 0.0 {
+                                let k = (dw / s.width).max(dh / s.height);
+                                let (cw, ch) = (dw / k, dh / k);
+                                let (x, y) = ((s.width - cw) / 2.0, (s.height - ch) / 2.0);
+                                windows::Win32::Graphics::Direct2D::Common::D2D_RECT_F {
+                                    left: x,
+                                    top: y,
+                                    right: x + cw,
+                                    bottom: y + ch,
+                                }
+                            } else {
+                                windows::Win32::Graphics::Direct2D::Common::D2D_RECT_F {
+                                    left: 0.0,
+                                    top: 0.0,
+                                    right: s.width,
+                                    bottom: s.height,
+                                }
+                            };
+                            gpu.dc.DrawBitmap(
+                                bmp,
+                                Some(&raw const dst),
+                                opacity.clamp(0.0, 1.0),
+                                windows::Win32::Graphics::Direct2D::D2D1_INTERPOLATION_MODE_LINEAR,
+                                Some(&raw const src),
+                                None,
+                            );
+                        }
                     }
                     DrawCmd::PushClip { rect } => {
                         gpu.dc

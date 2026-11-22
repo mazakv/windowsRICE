@@ -138,6 +138,8 @@ fn model(section: Section) -> StudioModel {
         motion_target: windowsrice_core::motion::AnimTarget::TextGradient,
         motion_key: Some(0),
         motion_scrub: 30,
+        background_file: None,
+        media_info: None,
     }
 }
 
@@ -1106,5 +1108,44 @@ fn animation_editor_edits_keyframes_within_limits() {
             .tree
             .iter()
             .any(|e| e.automation_id == "field:motion-color")
+    );
+}
+
+#[test]
+fn theme_editor_fits_the_smallest_window() {
+    let mut m = model(Section::Themes);
+    m.themes.push(ThemeEntry {
+        id: "my-theme".into(),
+        name: "My theme".into(),
+        builtin: false,
+        has_dark: true,
+        has_light: false,
+        swatches: [windowsrice_theme::Color::BLACK; 4],
+    });
+    m.theme_selected = Some("my-theme".into());
+    m.theme_edit = Some(ThemeEdit {
+        id: "my-theme".into(),
+        name: "My theme".into(),
+        dark: true,
+        background: "#101418".into(),
+        accent: "#4CC2FF".into(),
+        text: "#F0F0F0".into(),
+        backdrop: windowsrice_theme::schema::Backdrop::None,
+        opacity: 1.0,
+        errors: Vec::new(),
+        warnings: vec!["a warning".into()],
+        dirty: true,
+    });
+    let s = scene(&m, MIN_SIZE, Lang::En);
+    assert!(
+        s.scene.tree.problems().is_empty(),
+        "{:#?}",
+        s.scene.tree.problems()
+    );
+    assert!(
+        s.scene
+            .tree
+            .iter()
+            .any(|e| e.automation_id == "props:tsave")
     );
 }

@@ -531,6 +531,8 @@ impl Controller {
             motion_target: windowsrice_core::motion::AnimTarget::TextGradient,
             motion_key: None,
             motion_scrub: 0,
+            background_file: None,
+            media_info: None,
         };
         self.studio = Some(StudioWin {
             s,
@@ -637,6 +639,40 @@ impl Controller {
 
     /// Recomputes checks and rebuilds the Studio scene.
     pub fn studio_rebuild(&mut self) {
+        // Background image or video of the draft (Phase 14): file and header.
+        if let Some(style) = self
+            .studio
+            .as_ref()
+            .map(|s| s.model.draft.bar.style.clone())
+        {
+            let file = self.background_file(&style);
+            let changed = self.studio.as_ref().is_some_and(|s| {
+                s.model.background_file.as_ref().map(|f| &f.0) != file.as_ref().map(|f| &f.0)
+            });
+            let info = if changed {
+                Some(file.as_ref().and_then(|(p, _)| {
+                    let data = std::fs::read(p).ok()?;
+                    windowsrice_core::design_pack::check_media(p, &data)
+                        .ok()
+                        .map(|i| {
+                            (
+                                i.kind == windowsrice_core::design_code::AssetKind::Video,
+                                i.width,
+                                i.height,
+                                i.duration_ms.unwrap_or(0),
+                            )
+                        })
+                }))
+            } else {
+                None
+            };
+            if let Some(st) = self.studio.as_mut() {
+                st.model.background_file = file;
+                if let Some(i) = info {
+                    st.model.media_info = i;
+                }
+            }
+        }
         let Some(st) = self.studio.as_ref() else {
             return;
         };
@@ -1001,6 +1037,7 @@ impl Controller {
                 }
                 Deferred::Nothing
             }
+            StudioAction::MediaChoose => Deferred::OpenMedia,
             StudioAction::MotionTarget(t) => {
                 if let Some(st) = &mut self.studio {
                     st.model.motion_target = t;
