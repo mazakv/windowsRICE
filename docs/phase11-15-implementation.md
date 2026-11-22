@@ -169,19 +169,46 @@ Closing the Studio still returns its GPU memory and handles, and a second open a
 
 ## 10. Tests
 
-- **Workspace:** format, Clippy `-D warnings`, 290+ tests, Debug and Release builds.
-- **Application checks** (on this machine and in CI):
-  - end-to-end Apply 33;
-  - Design Studio 64;
-  - bar UI Automation 59;
-  - Phase 4/5 15;
-  - module panels 17;
-  - bottom bar 8;
-  - background image 3.
-- **Package and installer verification:** 30 checks.
-- **Intermittent failures:** the Studio checks showed occasional timing failures during development. The scripts now wait for asynchronous actions; two consecutive local runs passed after the change.
+### Final local run
 
-The final counts and the release run are listed in §12.
+`scripts/release.ps1 -Version 0.1.0-rc.2 -Prerelease -DryRun`, at commit `800a04d`:
+
+| Check | Result |
+|---|---|
+| Format, Clippy (`-D warnings`), release build | pass |
+| Workspace tests | **294 passed, 0 failed** |
+| Debug build | pass |
+| Third-party notices | current |
+| End-to-end Apply | 33/33 |
+| Design Studio | 64/64 |
+| Bar and popup UI Automation | 59/59 |
+| Phase 4/5 | 15/15 |
+| Module panels | 17/17 |
+| Bottom bar | 8/8 |
+| Background image | 3/3 |
+| Package and installer verification | 30/30 |
+| Checksum | verified |
+
+### GitHub CI (`windows-2025` runner, 1024×768, software rendering)
+
+Format, Clippy, tests and both builds pass on the runner.
+
+**Pass on the runner:**
+- Phase 4/5 (15/15);
+- module panels (17/17);
+- bottom bar (8/8, with a visible Windows taskbar);
+- in some runs, bar UI Automation (59/59, run 8) and the background image (3/3, run 8).
+
+**Do not pass reliably on the runner** (they pass on this machine):
+- bar keyboard-focus checks (focus is not given to the bar's window in some runs);
+- the end-to-end translucency and Apply-fade checks (no translucent compositing and 0 fade frames on the runner);
+- the Design Studio script in some runs.
+
+Small-screen defects that CI found were fixed (§7, and the colour editor, swatch and Reset layouts in Phase 15). Two kinds of check are reported as NOT RUN with the reason instead of failing:
+- checks that depend on Windows settings: an exact surface colour when transparency effects are on;
+- the native file-dialog checks, on the runner only.
+
+The remaining failures are not hidden.
 
 ## 11. NOT VERIFIED (needs a person, hardware or system changes)
 
@@ -194,6 +221,17 @@ The final counts and the release run are listed in §12.
 - A true cold start after a reboot.
 - **Code signing:** not signed, since no certificate is available.
 
-## 12. Release
+## 12. Release status
 
-Filled in after the release workflow ran (see the final report of this phase).
+**v0.1.0-rc.2 was not published.** The `Release` workflow runs the same application checks as `CI` on the GitHub runner, and they do not pass reliably there (§10). Publishing would require disabling them, which would be bypassing the checks, so the tag was **not pushed** and no GitHub Release exists yet.
+
+- **Locally verified:**
+  - package `target\dist\windowsRICE-0.1.0-rc.2-win-x64.zip` (1,498 KB);
+  - SHA-256 `6FC86A9708540FC3C04717391B15C1A8F9E51A03D35C00D7C59C355ACAAAB71C`;
+  - executable `target\packageelease\windowsrice-panel.exe`.
+- **Code signing:** not signed.
+- **Exact blocker:** on GitHub's Windows runner, UI-automation checks that need keyboard focus, translucent compositing or animation frames fail or vary between runs, so the release workflow's build job would fail before the publish job.
+- **Ways forward (owner's decision):**
+  1. a self-hosted Windows runner with a real GPU and an interactive desktop, so the release workflow runs the full suite;
+  2. a reviewed change that makes only these environment-dependent checks informational on GitHub-hosted runners, while `scripts/release.ps1` keeps requiring them locally before any tag.
+- **After that:** run `pwsh -File scripts/release.ps1 -Version 0.1.0-rc.2 -Prerelease -TaggerName kiho -TaggerEmail <email>`.
