@@ -3475,7 +3475,8 @@ fn advanced(u: &mut Ui, g: ElementId, r: Rect) {
         );
     }
     y += ROW + 14.0;
-    if y + 38.0 <= r.bottom() {
+    // The section scrolls: the button is always laid out.
+    {
         u.button(
             g,
             "adv:reset",

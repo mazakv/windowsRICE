@@ -1907,11 +1907,20 @@ fn module_look(u: &mut Ui, g: ElementId, x: f32, y: f32, w: f32) {
             current.is_none(),
             set(make(None)),
         );
+        // Swatches wrap onto further rows on narrow windows (none is
+        // dropped).
+        let per = (((x + w - sx) / (sz + 4.0)).floor() as usize).max(2);
+        let mut rows = 1;
         for (i, (sname, h)) in SWATCHES.iter().enumerate() {
-            let rr = Rect::new(sx + (i as f32 + 1.0) * (sz + 4.0), y, sz, sz);
-            if rr.right() > x + w {
-                break;
-            }
+            let k = i + 1;
+            let (col, line) = (k % per, k / per);
+            rows = rows.max(line + 1);
+            let rr = Rect::new(
+                sx + col as f32 * (sz + 4.0),
+                y + line as f32 * (sz + 4.0),
+                sz,
+                sz,
+            );
             u.swatch(
                 g,
                 &format!("look:c{row}:{i}"),
@@ -1922,7 +1931,7 @@ fn module_look(u: &mut Ui, g: ElementId, x: f32, y: f32, w: f32) {
                 set(make(Some((*h).to_owned()))),
             );
         }
-        y += sz + 10.0;
+        y += rows as f32 * (sz + 4.0) + 6.0;
     }
     // Size and density.
     let half = (w - 24.0) / 2.0;

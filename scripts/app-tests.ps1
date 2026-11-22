@@ -29,7 +29,7 @@ if (-not (Test-Path $shot)) {
     if ($code -ne 0 -or -not (Test-Path $shot)) { throw 'could not build the screenshot tool' }
 }
 
-$suite = @('design-e2e', 'studio-verify', 'bar-a11y', 'phase45-verify', 'panels-verify', 'bottom-verify')
+$suite = @('design-e2e', 'studio-verify', 'bar-a11y', 'phase45-verify', 'panels-verify', 'bottom-verify', 'media-verify')
 # `pwsh -File` passes "a,b" as one string; accept both forms.
 $Only = @($Only | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 if ($Only.Count) { $suite = @($suite | Where-Object { $Only -contains $_ }) }

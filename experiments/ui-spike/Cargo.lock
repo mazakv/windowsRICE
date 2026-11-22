@@ -5391,7 +5391,7 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
 name = "windowsrice-core"
-version = "0.1.0-rc.1"
+version = "0.1.0-rc.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -5403,7 +5403,7 @@ dependencies = [
 
 [[package]]
 name = "windowsrice-theme"
-version = "0.1.0-rc.1"
+version = "0.1.0-rc.2"
 dependencies = [
  "serde",
  "thiserror 2.0.21",
