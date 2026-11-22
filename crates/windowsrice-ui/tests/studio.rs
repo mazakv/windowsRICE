@@ -1149,3 +1149,19 @@ fn theme_editor_fits_the_smallest_window() {
             .any(|e| e.automation_id == "props:tsave")
     );
 }
+
+#[test]
+fn colour_editor_with_a_readability_notice_fits_the_smallest_window() {
+    let mut m = model(Section::Colors);
+    m.warnings = vec!["Readability: text #141A26 is shown as #8A93A6 on this background.".into()];
+    m.recent_colors = vec!["#112233".into(), "#445566".into()];
+    for scroll in [0.0, 400.0] {
+        m.scroll = scroll;
+        let s = scene(&m, MIN_SIZE, Lang::En);
+        assert!(
+            s.scene.tree.problems().is_empty(),
+            "{:#?}",
+            s.scene.tree.problems()
+        );
+    }
+}

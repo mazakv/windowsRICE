@@ -1471,6 +1471,9 @@ fn color_editor(u: &mut Ui, g: ElementId, r: Rect) {
             .iter()
             .find(|w| w.starts_with("Readability:") || w.starts_with("가독성:"))
             .cloned();
+    // On short panels with a notice, the R/G/B step row is left out (the
+    // hex field edits the same values), so every button stays reachable.
+    let compact = notice.is_some() && y + 44.0 + 38.0 + 36.0 + 40.0 > r.bottom();
     if let Some(w) = notice {
         let col = u.s.warning;
         u.label(
@@ -1497,6 +1500,7 @@ fn color_editor(u: &mut Ui, g: ElementId, r: Rect) {
     let third = r.w / 3.0;
     for (ch, (en, ko, v)) in [("R", "빨강", c.r), ("G", "초록", c.g), ("B", "파랑", c.b)]
         .into_iter()
+        .take(if compact { 0 } else { 3 })
         .enumerate()
     {
         let x = r.x + ch as f32 * third;
@@ -1537,7 +1541,9 @@ fn color_editor(u: &mut Ui, g: ElementId, r: Rect) {
             );
         }
     }
-    y += 36.0;
+    if !compact {
+        y += 36.0;
+    }
     let half = (r.w - 8.0) / 2.0;
     u.button(
         g,
