@@ -47,7 +47,14 @@ pub(crate) struct Interactive {
     octets_start: Option<(u64, u64)>,
     cpu: Option<windowsrice_windows::system_info::CpuInfo>,
     gpu_name: Option<Option<String>>,
+    /// Colour animation clock (Phase 14).
+    anim_start: Option<std::time::Instant>,
+    anim_running: bool,
 }
+
+/// Timer of the colour animations: 20 frames per second while running.
+pub(crate) const TIMER_ANIM: usize = 10;
+const ANIM_FRAME_MS: u32 = 50;
 
 impl Interactive {
     pub(crate) fn unread(&self) -> usize {
@@ -113,6 +120,71 @@ fn set_volume(percent: Option<u8>, toggle_mute: bool) -> windows::core::Result<(
 }
 
 impl Controller {
+    /// Starts or stops the animation clock. Animations run only while a
+    /// visible bar has an enabled animation, its `animations` setting is on
+    /// and Windows "Animation effects" is on; otherwise nothing is redrawn
+    /// for them (the first frame stays as a still image).
+    pub(crate) fn update_anim(&mut self) {
+        let want = (window::animations_enabled() || self.args.force_motion)
+            && !self.suspended
+            && (0..self.bars.len()).any(|i| {
+                let b = &self.bars[i];
+                let c = self.bar_conf(i);
+                b.s.visible
+                    && !b.collapsed
+                    && !b.yielded
+                    && c.animations
+                    && c.style.animations.iter().any(|a| a.enabled)
+            });
+        if want == self.ix.anim_running {
+            return;
+        }
+        self.ix.anim_running = want;
+        // SAFETY: timer on our own window.
+        unsafe {
+            if want {
+                self.ix
+                    .anim_start
+                    .get_or_insert_with(std::time::Instant::now);
+                windows::Win32::UI::WindowsAndMessaging::SetTimer(
+                    Some(self.hwnd),
+                    TIMER_ANIM,
+                    ANIM_FRAME_MS,
+                    None,
+                );
+            } else {
+                let _ =
+                    windows::Win32::UI::WindowsAndMessaging::KillTimer(Some(self.hwnd), TIMER_ANIM);
+            }
+        }
+        self.stats.popup_log.push(format!(
+            "{:.2}s animation {}",
+            self.stats.now_s(),
+            if want { "running" } else { "stopped" }
+        ));
+    }
+
+    /// The animation clock for scenes, `None` while stopped.
+    pub(crate) fn anim_ms(&self) -> Option<u64> {
+        if !self.ix.anim_running {
+            return None;
+        }
+        self.ix.anim_start.map(|s| s.elapsed().as_millis() as u64)
+    }
+
+    pub(crate) fn on_anim_tick(&mut self) {
+        self.update_anim();
+        if !self.ix.anim_running {
+            return;
+        }
+        for i in 0..self.bars.len() {
+            if self.bar_conf(i).style.animations.iter().any(|a| a.enabled) {
+                self.rebuild_bar(i, "animation");
+            }
+        }
+        self.render_all();
+    }
+
     /// Records graph history after a provider sample (by scheduler source).
     pub(crate) fn record_history(&mut self, source: usize) {
         use crate::scheduler::Source;

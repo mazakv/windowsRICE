@@ -36,6 +36,9 @@ pub struct Args {
     pub lang: Option<String>,
     /// Do not query GPU performance counters (GPU shown as unavailable).
     pub no_gpu_counter: bool,
+    /// Run colour animations even when Windows "Animation effects" is
+    /// off (measurements only; no Windows setting is changed).
+    pub force_motion: bool,
     /// Configuration file to use instead of %APPDATA%\windowsRICE\config.toml
     /// (tests use a project-local file). Saved settings go here too.
     pub config: Option<PathBuf>,
@@ -107,6 +110,7 @@ impl Args {
                 "--reduced-transparency" => a.reduced_transparency = true,
                 "--no-hotkey" => a.no_hotkey = true,
                 "--no-gpu-counter" => a.no_gpu_counter = true,
+                "--force-motion" => a.force_motion = true,
                 "--studio" => a.studio = true,
                 "--quit" => a.quit = true,
                 "--simulate-device-loss" => {
@@ -143,6 +147,7 @@ pub const HELP: &str = "windowsrice-panel [options]
   --reduced-transparency       draw solid surfaces
   --no-hotkey                  do not register the focus hotkey
   --no-gpu-counter             do not read GPU performance counters
+  --force-motion               run colour animations even with Windows animation effects off (tests)
   --studio                     open Design Studio (also in a running bar)
   --quit                       close a running windowsRICE bar
   --simulate-device-loss <s>   simulate one device loss

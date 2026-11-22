@@ -60,13 +60,15 @@ pub enum Section {
     Presets,
     /// Import RICE Design Code or a .ricepack (Phase 12).
     Import,
+    /// Colour animations and their timeline (Phase 14).
+    Motion,
     Advanced,
 }
 
 impl Section {
     /// Every page reachable from the navigation. `Home` (before Phase 12)
     /// is no longer listed: Templates is the starting page.
-    pub const ALL: [Section; 12] = [
+    pub const ALL: [Section; 13] = [
         Section::Styles,
         Section::Themes,
         Section::Colors,
@@ -78,6 +80,7 @@ impl Section {
         Section::Effects,
         Section::Presets,
         Section::Import,
+        Section::Motion,
         Section::Advanced,
     ];
     pub fn name(self, lang: Lang) -> &'static str {
@@ -94,6 +97,7 @@ impl Section {
             Section::Effects => ("Effects", "효과"),
             Section::Presets => ("My designs", "내 디자인"),
             Section::Import => ("Import design code", "디자인 코드 가져오기"),
+            Section::Motion => ("Animation", "애니메이션"),
             Section::Advanced => ("Advanced", "고급"),
         };
         if lang == Lang::En { en } else { ko }
@@ -112,6 +116,7 @@ impl Section {
             Section::Effects => "\u{E706}",
             Section::Presets => "\u{E74E}",
             Section::Import => "\u{E8B5}",
+            Section::Motion => "\u{E768}",
             Section::Advanced => "\u{E713}",
         }
     }
@@ -129,6 +134,7 @@ impl Section {
             Section::Effects => "effects",
             Section::Presets => "presets",
             Section::Import => "import",
+            Section::Motion => "motion",
             Section::Advanced => "advanced",
         }
     }
@@ -158,6 +164,7 @@ impl Section {
                 "Save and share complete designs",
                 "완성된 디자인 저장과 공유",
             ),
+            Section::Motion => ("Animated colours and gradients", "움직이는 색과 그라데이션"),
             Section::Import => (
                 "Check and import shared designs",
                 "공유된 디자인 검사 및 가져오기",
@@ -200,7 +207,7 @@ impl Group {
                 Section::Typography,
                 Section::Icons,
             ],
-            Group::Motion => &[Section::Effects],
+            Group::Motion => &[Section::Effects, Section::Motion],
             Group::MyDesigns => &[Section::Presets, Section::Import],
             Group::Advanced => &[Section::Advanced],
         }
@@ -953,6 +960,11 @@ pub struct StudioModel {
     pub font_filter: FontFilter,
     /// Import design code page (Phase 12).
     pub import: ImportView,
+    /// Animation page (Phase 14): the animation edited, its selected
+    /// keyframe and the preview position in the cycle (0–100 %).
+    pub motion_target: windowsrice_core::motion::AnimTarget,
+    pub motion_key: Option<usize>,
+    pub motion_scrub: u8,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -1039,6 +1051,26 @@ pub enum StudioAction {
     CreateCustom,
     /// Edit the bottom bar (`true`) or the top bar (Phase 14).
     EditBottomBar(bool),
+    /// Animation page (Phase 14). Selection and preview:
+    MotionTarget(windowsrice_core::motion::AnimTarget),
+    MotionKey(usize),
+    MotionScrub(i8),
+    /// Draft edits of the animation of a target:
+    MotionToggle(windowsrice_core::motion::AnimTarget),
+    MotionPreset(windowsrice_core::motion::AnimTarget, u8),
+    MotionAddKey(windowsrice_core::motion::AnimTarget),
+    MotionRemoveKey(windowsrice_core::motion::AnimTarget, usize),
+    MotionMoveKey(windowsrice_core::motion::AnimTarget, usize, i8),
+    MotionInterp(
+        windowsrice_core::motion::AnimTarget,
+        windowsrice_core::motion::Interpolation,
+    ),
+    MotionDirection(
+        windowsrice_core::motion::AnimTarget,
+        windowsrice_core::motion::AnimDirection,
+    ),
+    MotionWrap(windowsrice_core::motion::AnimTarget),
+    MotionSpeed(windowsrice_core::motion::AnimTarget, i32),
     /// Show or hide the bottom bar.
     ToggleBottomBar,
     ToggleReserve,
@@ -2214,6 +2246,17 @@ fn build_once(
             modules: model.draft.bar.modules.clone(),
             readings: model.readings.clone(),
             decor: Decor::from_style(&model.draft.bar.style),
+            anim_ms: (model.section == Section::Motion).then(|| {
+                let d = model
+                    .draft
+                    .bar
+                    .style
+                    .animations
+                    .iter()
+                    .find(|a| a.target == model.motion_target)
+                    .map_or(1000, |a| a.duration_ms);
+                u64::from(d) * u64::from(model.motion_scrub) / 100
+            }),
             ..Default::default()
         },
         preview.style,
@@ -2304,6 +2347,7 @@ fn build_once(
         Section::Effects => gallery::effects(&mut u, body, content),
         Section::Presets => presets(&mut u, body, content),
         Section::Import => import_page(&mut u, body, content),
+        Section::Motion => motion_page(&mut u, body, content),
         Section::Advanced => gallery::advanced(&mut u, body, content),
     }
     u.clip = None;
@@ -4081,6 +4125,9 @@ pub fn apply_draft_action(
 ) -> bool {
     use crate::popup::step_interval;
     let before = d.clone();
+    if let Some(changed) = motion_edit(d, a) {
+        return changed && *d != before;
+    }
     if matches!(a, StudioAction::ToggleBottomBar) {
         if d.editing_bottom {
             d.bar.enabled = !d.bar.enabled;
@@ -4460,4 +4507,532 @@ pub enum FontFilter {
     Korean,
     /// Fixed-width families.
     Monospace,
+}
+
+// ------------------------------------------------------------ animation (Phase 14)
+
+/// Keyframe colours of the animation presets.
+pub const MOTION_PRESETS: [(&str, &str, &[&str]); 5] = [
+    (
+        "Rainbow",
+        "무지개",
+        &[
+            "#FF5A5A", "#FFA94D", "#FFE066", "#69DB7C", "#4DABF7", "#9775FA", "#F783AC",
+        ],
+    ),
+    ("Breathing", "숨쉬기", &["#4CC2FF", "#1E6FA8"]),
+    ("Aurora", "오로라", &["#2BD9A5", "#3A7BD5", "#8E54E9"]),
+    ("Sunset", "노을", &["#FF7E5F", "#FEB47B", "#C44569"]),
+    ("Neon", "네온", &["#FF3DCB", "#4DF2FF"]),
+];
+
+fn motion_preset(
+    target: windowsrice_core::motion::AnimTarget,
+    i: usize,
+) -> windowsrice_core::motion::ColorAnimation {
+    use windowsrice_core::motion::{AnimDirection, ColorAnimation, Interpolation, Keyframe};
+    let (_, _, colors) = MOTION_PRESETS[i.min(MOTION_PRESETS.len() - 1)];
+    let n = colors.len() as f32;
+    ColorAnimation {
+        target,
+        keyframes: colors
+            .iter()
+            .enumerate()
+            .map(|(k, c)| Keyframe {
+                at: (k as f32 / n * 100.0).round() / 100.0,
+                color: (*c).to_owned(),
+            })
+            .collect(),
+        duration_ms: if colors.len() > 3 { 8000 } else { 4000 },
+        interpolation: if colors.len() > 3 {
+            Interpolation::Linear
+        } else {
+            Interpolation::Smooth
+        },
+        direction: if colors.len() == 2 {
+            AnimDirection::Alternate
+        } else {
+            AnimDirection::Normal
+        },
+        wrap: true,
+        enabled: true,
+    }
+}
+
+/// Applies an Animation-page draft edit; `None` for other actions.
+fn motion_edit(d: &mut Draft, a: &StudioAction) -> Option<bool> {
+    use windowsrice_core::motion::{
+        Keyframe, MAX_ANIMATIONS, MAX_DURATION_MS, MAX_KEYFRAMES, MIN_DURATION_MS,
+    };
+    let list = &mut d.bar.style.animations;
+    let find = |list: &mut Vec<windowsrice_core::motion::ColorAnimation>, t| {
+        list.iter().position(|x| x.target == t)
+    };
+    let r = match a {
+        StudioAction::MotionToggle(t) => match find(list, *t) {
+            Some(i) => {
+                list[i].enabled = !list[i].enabled;
+                true
+            }
+            None if list.len() < MAX_ANIMATIONS => {
+                list.push(motion_preset(*t, 0));
+                true
+            }
+            None => false,
+        },
+        StudioAction::MotionPreset(t, p) => {
+            let new = motion_preset(*t, usize::from(*p));
+            match find(list, *t) {
+                Some(i) => list[i] = new,
+                None if list.len() < MAX_ANIMATIONS => list.push(new),
+                None => return Some(false),
+            }
+            true
+        }
+        StudioAction::MotionAddKey(t) => {
+            let Some(i) = find(list, *t) else {
+                return Some(false);
+            };
+            let an = &mut list[i];
+            if an.keyframes.len() >= MAX_KEYFRAMES {
+                return Some(false);
+            }
+            // In the middle of the widest gap (including the loop gap).
+            let mut pos: Vec<f32> = an.keyframes.iter().map(|k| k.at).collect();
+            pos.sort_by(f32::total_cmp);
+            let mut best = (0.5f32, 0.0f32);
+            for w in pos.windows(2) {
+                if w[1] - w[0] > best.1 {
+                    best = ((w[0] + w[1]) / 2.0, w[1] - w[0]);
+                }
+            }
+            if let (Some(f), Some(l)) = (pos.first(), pos.last())
+                && 1.0 - l + f > best.1
+            {
+                best = (((l + 1.0 + f) / 2.0) % 1.0, 1.0 - l + f);
+            }
+            let at = (best.0 * 100.0).round() / 100.0;
+            let c = an
+                .color_at_phase(at)
+                .map(|c| c.to_u8())
+                .unwrap_or((255, 255, 255));
+            an.keyframes.push(Keyframe {
+                at,
+                color: format!("#{:02X}{:02X}{:02X}", c.0, c.1, c.2),
+            });
+            an.keyframes.sort_by(|a, b| a.at.total_cmp(&b.at));
+            true
+        }
+        StudioAction::MotionRemoveKey(t, k) => {
+            let Some(i) = find(list, *t) else {
+                return Some(false);
+            };
+            if list[i].keyframes.len() <= 2 || *k >= list[i].keyframes.len() {
+                return Some(false);
+            }
+            list[i].keyframes.remove(*k);
+            true
+        }
+        StudioAction::MotionMoveKey(t, k, step) => {
+            let Some(i) = find(list, *t) else {
+                return Some(false);
+            };
+            let ks = &mut list[i].keyframes;
+            let Some(kf) = ks.get(*k) else {
+                return Some(false);
+            };
+            // Between its neighbours, so the order is kept.
+            let lo = if *k == 0 { 0.0 } else { ks[*k - 1].at + 0.01 };
+            let hi = if *k + 1 >= ks.len() {
+                1.0
+            } else {
+                ks[*k + 1].at - 0.01
+            };
+            let at = ((kf.at + f32::from(*step) * 0.05) * 100.0).round() / 100.0;
+            ks[*k].at = at.clamp(lo, hi.max(lo));
+            true
+        }
+        StudioAction::MotionInterp(t, v) => match find(list, *t) {
+            Some(i) => {
+                list[i].interpolation = *v;
+                true
+            }
+            None => false,
+        },
+        StudioAction::MotionDirection(t, v) => match find(list, *t) {
+            Some(i) => {
+                list[i].direction = *v;
+                true
+            }
+            None => false,
+        },
+        StudioAction::MotionWrap(t) => match find(list, *t) {
+            Some(i) => {
+                list[i].wrap = !list[i].wrap;
+                true
+            }
+            None => false,
+        },
+        StudioAction::MotionSpeed(t, delta) => match find(list, *t) {
+            Some(i) => {
+                let v = (i64::from(list[i].duration_ms) + i64::from(*delta))
+                    .clamp(i64::from(MIN_DURATION_MS), i64::from(MAX_DURATION_MS));
+                list[i].duration_ms = v as u32;
+                true
+            }
+            None => false,
+        },
+        _ => return None,
+    };
+    Some(r)
+}
+
+fn motion_page(u: &mut Ui, g: ElementId, r: Rect) {
+    use windowsrice_core::motion::{AnimDirection, AnimTarget, Interpolation};
+    let lang = u.lang;
+    let m = u.m;
+    let target = m.motion_target;
+    let mut y = section_title(
+        u,
+        g,
+        r,
+        t(lang, "Animation", "애니메이션"),
+        t(
+            lang,
+            "Animated colours for text, rainbow text, the accent, icons, the clock or the background. Animations pause while the bar is hidden and stay still when Windows \"Animation effects\" is off. Cycles shorter than a second are not allowed.",
+            "글자, 무지개 글자, 강조색, 아이콘, 시계, 배경의 움직이는 색입니다. 바가 숨겨지면 멈추고, Windows \"애니메이션 효과\"가 꺼져 있으면 움직이지 않습니다. 1초보다 짧은 주기는 쓸 수 없습니다.",
+        ),
+    );
+    let targets: [(AnimTarget, &str, &str); 6] = [
+        (AnimTarget::TextGradient, "Rainbow text", "무지개 글자"),
+        (AnimTarget::Text, "Text", "글자"),
+        (AnimTarget::Accent, "Accent", "강조색"),
+        (AnimTarget::Icons, "Icons", "아이콘"),
+        (AnimTarget::Clock, "Clock", "시계"),
+        (AnimTarget::Background, "Background", "배경"),
+    ];
+    let cw = ((r.w - 5.0 * 8.0) / 6.0).max(80.0);
+    for (i, (tg, en, ko)) in targets.iter().enumerate() {
+        let on = m
+            .draft
+            .bar
+            .style
+            .animations
+            .iter()
+            .any(|a| a.target == *tg && a.enabled);
+        let label = if on {
+            format!("{} ●", t(lang, en, ko))
+        } else {
+            t(lang, en, ko).to_owned()
+        };
+        u.radio(
+            g,
+            &format!("motion:target:{i}"),
+            Rect::new(r.x + i as f32 * (cw + 8.0), y, cw, ROW),
+            &label,
+            *tg == target,
+            StudioAction::MotionTarget(*tg),
+        );
+    }
+    y += ROW + 12.0;
+    let an = m
+        .draft
+        .bar
+        .style
+        .animations
+        .iter()
+        .find(|a| a.target == target);
+    u.toggle(
+        g,
+        "motion:on",
+        Rect::new(r.x, y, (r.w - 16.0) / 2.0, ROW),
+        t(lang, "Animate", "움직이기"),
+        an.is_some_and(|a| a.enabled),
+        true,
+        None,
+        StudioAction::MotionToggle(target),
+    );
+    y += ROW + 10.0;
+    // Presets.
+    let pw = ((r.w - 4.0 * 8.0) / 5.0).min(150.0);
+    for (i, (en, ko, _)) in MOTION_PRESETS.iter().enumerate() {
+        u.button(
+            g,
+            &format!("motion:preset:{i}"),
+            Rect::new(r.x + i as f32 * (pw + 8.0), y, pw, 32.0),
+            None,
+            t(lang, en, ko),
+            t(lang, en, ko),
+            Kind::Secondary,
+            true,
+            StudioAction::MotionPreset(target, i as u8),
+        );
+    }
+    y += 44.0;
+    let Some(an) = an else {
+        u.label(
+            g,
+            "motion:none",
+            Rect::new(r.x, y, r.w, 24.0),
+            t(
+                lang,
+                "No animation yet: choose Animate or a preset.",
+                "아직 애니메이션이 없습니다. 움직이기나 프리셋을 고르세요.",
+            ),
+            13.0,
+            400,
+            u.s.text2,
+        );
+        return;
+    };
+    // Timeline: the cycle as a gradient strip, keyframe markers and the
+    // preview position.
+    let tl = Rect::new(r.x, y + 8.0, r.w, 36.0);
+    let strip = u.group(
+        g,
+        "motion:timeline",
+        t(lang, "Timeline", "타임라인"),
+        Rect::new(r.x, y, r.w, 64.0),
+    );
+    let n = 64;
+    for s in 0..n {
+        let p = s as f32 / n as f32;
+        let c = an.color_at_phase(p).map(|c| c.to_u8()).unwrap_or((0, 0, 0));
+        u.fill(
+            Rect::new(tl.x + p * tl.w, tl.y, tl.w / n as f32 + 0.5, tl.h),
+            0.0,
+            Color::rgb(c.0, c.1, c.2),
+            strip,
+        );
+    }
+    let px = tl.x + tl.w * f32::from(m.motion_scrub) / 100.0;
+    u.fill(
+        Rect::new(px - 1.0, tl.y - 4.0, 2.0, tl.h + 8.0),
+        1.0,
+        u.s.text,
+        strip,
+    );
+    for (k, kf) in an.keyframes.iter().enumerate() {
+        let x = tl.x + tl.w * kf.at.clamp(0.0, 1.0);
+        let name = match lang {
+            Lang::En => format!("Keyframe {} at {:.0}%: {}", k + 1, kf.at * 100.0, kf.color),
+            Lang::Ko => format!("키프레임 {} ({:.0}%): {}", k + 1, kf.at * 100.0, kf.color),
+        };
+        let id = u.add(
+            strip,
+            Element::new(
+                key_id(&format!("motion:key:{k}")),
+                intern(&format!("motion:key:{k}")),
+                Role::ListItem,
+                name,
+                Rect::new(x - 9.0, tl.bottom() + 2.0, 18.0, 18.0),
+            )
+            .focusable(true)
+            .selected(m.motion_key == Some(k)),
+        );
+        let col = parse_hex_color(&kf.color).map_or(u.s.text, |(r, g, b)| Color::rgb(r, g, b));
+        u.fill(
+            Rect::new(x - 7.0, tl.bottom() + 4.0, 14.0, 14.0),
+            7.0,
+            if m.motion_key == Some(k) {
+                u.s.accent
+            } else {
+                u.s.text
+            },
+            id,
+        );
+        u.fill(
+            Rect::new(x - 5.0, tl.bottom() + 6.0, 10.0, 10.0),
+            5.0,
+            col,
+            id,
+        );
+        u.actions.push((id, StudioAction::MotionKey(k)));
+    }
+    y += 76.0;
+    // Preview position (scrub).
+    let scrub = match lang {
+        Lang::En => format!("Preview at {}% of the cycle", m.motion_scrub),
+        Lang::Ko => format!("주기의 {}% 지점 미리 보기", m.motion_scrub),
+    };
+    u.button(
+        g,
+        "motion:scrub-back",
+        Rect::new(r.x, y, 32.0, 32.0),
+        Some("\u{E76B}"),
+        "",
+        t(lang, "Earlier in the cycle", "주기의 앞쪽"),
+        Kind::Secondary,
+        true,
+        StudioAction::MotionScrub(-10),
+    );
+    u.label(
+        g,
+        "motion:scrub",
+        Rect::new(r.x + 40.0, y, 260.0, 32.0),
+        &scrub,
+        13.0,
+        400,
+        u.s.text,
+    );
+    u.button(
+        g,
+        "motion:scrub-on",
+        Rect::new(r.x + 300.0, y, 32.0, 32.0),
+        Some("\u{E76C}"),
+        "",
+        t(lang, "Later in the cycle", "주기의 뒤쪽"),
+        Kind::Secondary,
+        true,
+        StudioAction::MotionScrub(10),
+    );
+    y += 44.0;
+    // Selected keyframe.
+    if let Some(k) = m.motion_key.filter(|k| *k < an.keyframes.len()) {
+        let kf = &an.keyframes[k];
+        let label = match lang {
+            Lang::En => format!("Keyframe {} colour (#RRGGBB)", k + 1),
+            Lang::Ko => format!("키프레임 {} 색 (#RRGGBB)", k + 1),
+        };
+        u.field(
+            g,
+            "field:motion-color",
+            Rect::new(r.x, y, 260.0, 32.0),
+            &label,
+            &kf.color,
+            "#RRGGBB",
+        );
+        let bx = r.x + 272.0;
+        u.button(
+            g,
+            "motion:key-left",
+            Rect::new(bx, y, 32.0, 32.0),
+            Some("\u{E72B}"),
+            "",
+            t(lang, "Move keyframe earlier", "키프레임을 앞으로"),
+            Kind::Secondary,
+            true,
+            StudioAction::MotionMoveKey(target, k, -1),
+        );
+        u.button(
+            g,
+            "motion:key-right",
+            Rect::new(bx + 40.0, y, 32.0, 32.0),
+            Some("\u{E72A}"),
+            "",
+            t(lang, "Move keyframe later", "키프레임을 뒤로"),
+            Kind::Secondary,
+            true,
+            StudioAction::MotionMoveKey(target, k, 1),
+        );
+        u.button(
+            g,
+            "motion:key-remove",
+            Rect::new(bx + 80.0, y, 120.0, 32.0),
+            Some("\u{E74D}"),
+            t(lang, "Remove", "삭제"),
+            t(lang, "Remove keyframe", "키프레임 삭제"),
+            Kind::Secondary,
+            an.keyframes.len() > 2,
+            StudioAction::MotionRemoveKey(target, k),
+        );
+        y += 44.0;
+    }
+    u.button(
+        g,
+        "motion:key-add",
+        Rect::new(r.x, y, 180.0, 32.0),
+        Some("\u{E710}"),
+        t(lang, "Add keyframe", "키프레임 추가"),
+        t(lang, "Add keyframe", "키프레임 추가"),
+        Kind::Secondary,
+        an.keyframes.len() < windowsrice_core::motion::MAX_KEYFRAMES,
+        StudioAction::MotionAddKey(target),
+    );
+    y += 48.0;
+    // Interpolation, direction, loop, speed.
+    let third = ((r.w - 16.0) / 3.0).min(200.0);
+    for (i, (v, en, ko)) in [
+        (Interpolation::Linear, "Linear", "선형"),
+        (Interpolation::Smooth, "Smooth", "부드럽게"),
+        (Interpolation::Step, "Step", "단계"),
+    ]
+    .iter()
+    .enumerate()
+    {
+        u.radio(
+            g,
+            &format!("motion:interp:{i}"),
+            Rect::new(r.x + i as f32 * (third + 8.0), y, third, ROW),
+            t(lang, en, ko),
+            an.interpolation == *v,
+            StudioAction::MotionInterp(target, *v),
+        );
+    }
+    y += ROW + 6.0;
+    for (i, (v, en, ko)) in [
+        (AnimDirection::Normal, "Forward", "정방향"),
+        (AnimDirection::Reverse, "Reverse", "역방향"),
+        (AnimDirection::Alternate, "Back and forth", "왕복"),
+    ]
+    .iter()
+    .enumerate()
+    {
+        u.radio(
+            g,
+            &format!("motion:dir:{i}"),
+            Rect::new(r.x + i as f32 * (third + 8.0), y, third, ROW),
+            t(lang, en, ko),
+            an.direction == *v,
+            StudioAction::MotionDirection(target, *v),
+        );
+    }
+    y += ROW + 6.0;
+    u.toggle(
+        g,
+        "motion:wrap",
+        Rect::new(r.x, y, (r.w - 16.0) / 2.0, ROW),
+        t(lang, "Seamless loop", "자연스러운 반복"),
+        an.wrap,
+        true,
+        None,
+        StudioAction::MotionWrap(target),
+    );
+    y += ROW + 6.0;
+    let speed = match lang {
+        Lang::En => format!("One cycle: {:.1} s", f64::from(an.duration_ms) / 1000.0),
+        Lang::Ko => format!("한 주기: {:.1}초", f64::from(an.duration_ms) / 1000.0),
+    };
+    u.button(
+        g,
+        "motion:faster",
+        Rect::new(r.x, y, 32.0, 32.0),
+        Some("\u{E738}"),
+        "",
+        t(lang, "Faster (shorter cycle)", "빠르게 (짧은 주기)"),
+        Kind::Secondary,
+        an.duration_ms > windowsrice_core::motion::MIN_DURATION_MS,
+        StudioAction::MotionSpeed(target, -1000),
+    );
+    u.label(
+        g,
+        "motion:speed",
+        Rect::new(r.x + 40.0, y, 220.0, 32.0),
+        &speed,
+        13.0,
+        400,
+        u.s.text,
+    );
+    u.button(
+        g,
+        "motion:slower",
+        Rect::new(r.x + 260.0, y, 32.0, 32.0),
+        Some("\u{E710}"),
+        "",
+        t(lang, "Slower (longer cycle)", "느리게 (긴 주기)"),
+        Kind::Secondary,
+        an.duration_ms < windowsrice_core::motion::MAX_DURATION_MS,
+        StudioAction::MotionSpeed(target, 1000),
+    );
+    u.content_bottom = u.content_bottom.max(y + 48.0);
 }

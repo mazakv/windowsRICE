@@ -135,6 +135,9 @@ fn model(section: Section) -> StudioModel {
         theme_defaults: ThemeDefaults::default(),
         font_filter: FontFilter::All,
         import: Default::default(),
+        motion_target: windowsrice_core::motion::AnimTarget::TextGradient,
+        motion_key: Some(0),
+        motion_scrub: 30,
     }
 }
 
@@ -1037,4 +1040,71 @@ fn the_bottom_bar_is_edited_like_the_top_bar() {
         let e = s.scene.tree.iter().find(|e| e.automation_id == k).expect(k);
         assert!(s.action(e.id).is_some());
     }
+}
+
+#[test]
+fn animation_editor_edits_keyframes_within_limits() {
+    use windowsrice_core::motion::{AnimTarget, MIN_DURATION_MS};
+    let t = AnimTarget::TextGradient;
+    let mut d = Draft::default();
+    let ok = |d: &mut Draft, a: StudioAction| apply_draft_action(d, &a, 0.88, 34);
+    assert!(ok(&mut d, StudioAction::MotionPreset(t, 0)));
+    let a = |d: &Draft| {
+        d.bar
+            .style
+            .animations
+            .iter()
+            .find(|x| x.target == t)
+            .cloned()
+            .unwrap()
+    };
+    assert_eq!(a(&d).keyframes.len(), 7);
+    assert!(ok(&mut d, StudioAction::MotionAddKey(t)));
+    assert_eq!(a(&d).keyframes.len(), 8);
+    let ats: Vec<f32> = a(&d).keyframes.iter().map(|k| k.at).collect();
+    assert!(
+        ats.windows(2).all(|w| w[0] <= w[1]),
+        "keyframes stay in order: {ats:?}"
+    );
+    assert!(ok(&mut d, StudioAction::MotionMoveKey(t, 1, 1)));
+    assert!(ok(&mut d, StudioAction::MotionRemoveKey(t, 0)));
+    // Speed is limited (no flashing).
+    for _ in 0..20 {
+        ok(&mut d, StudioAction::MotionSpeed(t, -1000));
+    }
+    assert_eq!(a(&d).duration_ms, MIN_DURATION_MS);
+    // At least two keyframes remain.
+    for _ in 0..10 {
+        ok(&mut d, StudioAction::MotionRemoveKey(t, 0));
+    }
+    assert_eq!(a(&d).keyframes.len(), 2);
+    assert!(ok(&mut d, StudioAction::MotionToggle(t)));
+    assert!(!a(&d).enabled);
+    let cfg = windowsrice_core::config::Config {
+        bar: d.bar.clone(),
+        ..Default::default()
+    };
+    assert!(cfg.validate().is_ok(), "{:?}", cfg.validate());
+    // The page shows the timeline with selectable keyframes.
+    let mut m = model(Section::Motion);
+    m.draft = d;
+    let s = scene(&m, SIZES[0], Lang::En);
+    let keys: Vec<_> = s
+        .scene
+        .tree
+        .iter()
+        .filter(|e| e.automation_id.starts_with("motion:key:"))
+        .collect();
+    assert_eq!(keys.len(), 2);
+    assert!(
+        keys[0].name.starts_with("Keyframe 1 at "),
+        "{}",
+        keys[0].name
+    );
+    assert!(
+        s.scene
+            .tree
+            .iter()
+            .any(|e| e.automation_id == "field:motion-color")
+    );
 }

@@ -528,6 +528,9 @@ impl Controller {
             theme_defaults: ThemeDefaults::default(),
             font_filter: FontFilter::All,
             import: Default::default(),
+            motion_target: windowsrice_core::motion::AnimTarget::TextGradient,
+            motion_key: None,
+            motion_scrub: 0,
         };
         self.studio = Some(StudioWin {
             s,
@@ -995,6 +998,26 @@ impl Controller {
                 {
                     st.undo.push(std::mem::replace(&mut st.model.draft, next));
                     st.model.status = None;
+                }
+                Deferred::Nothing
+            }
+            StudioAction::MotionTarget(t) => {
+                if let Some(st) = &mut self.studio {
+                    st.model.motion_target = t;
+                    st.model.motion_key = None;
+                }
+                Deferred::Nothing
+            }
+            StudioAction::MotionKey(k) => {
+                if let Some(st) = &mut self.studio {
+                    st.model.motion_key = Some(k);
+                }
+                Deferred::Nothing
+            }
+            StudioAction::MotionScrub(step) => {
+                if let Some(st) = &mut self.studio {
+                    st.model.motion_scrub =
+                        (i16::from(st.model.motion_scrub) + i16::from(step)).rem_euclid(100) as u8;
                 }
                 Deferred::Nothing
             }
@@ -1572,6 +1595,19 @@ impl Controller {
             "field:theme-text" => te(|e| e.text.clone()),
             "field:preset-name" => m.preset_name.clone(),
             "field:import-line" => self.import_line_text(),
+            "field:motion-color" => m
+                .motion_key
+                .and_then(|k| {
+                    m.draft
+                        .bar
+                        .style
+                        .animations
+                        .iter()
+                        .find(|a| a.target == m.motion_target)
+                        .and_then(|a| a.keyframes.get(k))
+                })
+                .map(|k| k.color.clone())
+                .unwrap_or_default(),
             _ => String::new(),
         }
     }
@@ -1723,6 +1759,35 @@ impl Controller {
                 }
             }
             "field:import-line" => self.import_replace_line(&v),
+            "field:motion-color" => {
+                if !valid_hex(&v) {
+                    self.status(bad_hex(lang), Severity::Error);
+                    return;
+                }
+                let up = v.to_uppercase();
+                let (target, key) = match &self.studio {
+                    Some(st) => (st.model.motion_target, st.model.motion_key),
+                    None => return,
+                };
+                if let Some(k) = key {
+                    self.edit(|d| {
+                        let Some(a) = d
+                            .bar
+                            .style
+                            .animations
+                            .iter_mut()
+                            .find(|a| a.target == target)
+                        else {
+                            return false;
+                        };
+                        let Some(kf) = a.keyframes.get_mut(k) else {
+                            return false;
+                        };
+                        kf.color = up;
+                        true
+                    });
+                }
+            }
             _ => {}
         }
     }

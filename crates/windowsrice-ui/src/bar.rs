@@ -50,6 +50,9 @@ pub struct BarModel {
     pub popup_open: bool,
     /// Bar decorations from `[bar.style]`.
     pub decor: Decor,
+    /// Milliseconds on the animation clock (Phase 14); `None` draws the
+    /// animations' first frame (still).
+    pub anim_ms: Option<u64>,
 }
 
 /// Everything in `[bar.style]` that is not a theme palette colour: module
@@ -90,6 +93,8 @@ pub struct Decor {
     /// 0–1.
     pub highlight: f32,
     pub region_gap: Option<f32>,
+    /// Enabled colour animations (Phase 14).
+    pub animations: Vec<windowsrice_core::motion::ColorAnimation>,
 }
 
 impl Default for Decor {
@@ -146,6 +151,7 @@ impl Decor {
             shadow: f32::from(s.shadow.unwrap_or(0)) / 100.0,
             highlight: f32::from(s.highlight.unwrap_or(0)) / 100.0,
             region_gap: s.region_gap.map(f32::from),
+            animations: s.animations.iter().filter(|a| a.enabled).cloned().collect(),
         }
     }
 }
@@ -255,7 +261,77 @@ pub fn build_bar(
         VerticalAlign::Top => 2.0_f32.min((h - chip_h) / 2.0),
         VerticalAlign::Bottom => (h - chip_h - 2.0).max((h - chip_h) / 2.0),
     };
-    let d = &model.decor;
+    // Colour animations (Phase 14): the animated colours replace their
+    // targets for this frame; readability is enforced below as for any
+    // colour.
+    use windowsrice_core::motion::AnimTarget;
+    let anim_t = model.anim_ms.unwrap_or(0);
+    let anim_color = |target: AnimTarget| {
+        model
+            .decor
+            .animations
+            .iter()
+            .find(|a| a.target == target)
+            .and_then(|a| a.color_at(anim_t))
+            .map(|c| {
+                let (r, g, b) = c.to_u8();
+                Color::rgb(r, g, b)
+            })
+    };
+    let text_gradient = model
+        .decor
+        .animations
+        .iter()
+        .find(|a| a.target == AnimTarget::TextGradient)
+        .cloned();
+    let style_anim;
+    let style = match (anim_color(AnimTarget::Text), anim_color(AnimTarget::Accent)) {
+        (None, None) => style,
+        (tx, ac) => {
+            let mut s = style.clone();
+            if let Some(c) = tx {
+                s.text_primary = c;
+            }
+            if let Some(c) = ac {
+                s.accent = c;
+            }
+            style_anim = s;
+            &style_anim
+        }
+    };
+    let decor_anim;
+    let d = if model.decor.animations.is_empty() {
+        &model.decor
+    } else {
+        let mut x = model.decor.clone();
+        if let Some(c) = anim_color(AnimTarget::Icons) {
+            x.icon_tint = IconTint::Custom;
+            x.icon_color = Some(c);
+        }
+        if let Some(c) = anim_color(AnimTarget::Clock) {
+            x.clock_color = Some(c);
+        }
+        if let Some(a) = x
+            .animations
+            .iter()
+            .find(|a| a.target == AnimTarget::Background)
+        {
+            // The keyframes become a gradient that scrolls once per cycle.
+            let p = a.phase(anim_t);
+            let stops: Vec<Color> = (0..4)
+                .filter_map(|i| a.color_at_phase((p + i as f32 / 3.0).fract()))
+                .map(|c| {
+                    let (r, g, b) = c.to_u8();
+                    Color::rgb(r, g, b)
+                })
+                .collect();
+            if stops.len() >= 2 {
+                x.gradient = Some((GradientDirection::Horizontal, stops));
+            }
+        }
+        decor_anim = x;
+        &decor_anim
+    };
     let density_factor = |x: Density| match x {
         Density::Compact => 0.5,
         Density::Normal => 1.0,
@@ -830,6 +906,16 @@ pub fn build_bar(
                             .map_or(style.text_primary, fit_text)
                     } else {
                         style.text_primary
+                    };
+                    // Rainbow text: the colour moves across the bar.
+                    let color = match (&text_gradient, v.available) {
+                        (Some(g), true) => g
+                            .color_at_phase((g.phase(anim_t) + px / w.max(1.0)).fract())
+                            .map_or(color, |c| {
+                                let (r, gg, b) = c.to_u8();
+                                Color::rgb(r, gg, b)
+                            }),
+                        _ => color,
                     };
                     let color = if v.available { fit_text(color) } else { color };
                     draw.push(DrawCmd::Text {

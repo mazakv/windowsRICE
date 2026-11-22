@@ -10,7 +10,7 @@ $StudioGroupOf = @{
     presets = 'my-designs'; import = 'my-designs'
     advanced = 'advanced'
 }
-$StudioPages = @('styles', 'themes', 'modules', 'layout', 'colors', 'background', 'typography', 'icons', 'effects', 'presets', 'advanced')
+$StudioPages = @('styles', 'themes', 'modules', 'layout', 'colors', 'background', 'typography', 'icons', 'effects', 'motion', 'presets', 'import', 'advanced')
 
 function Select-StudioElement($e) {
     $e.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()

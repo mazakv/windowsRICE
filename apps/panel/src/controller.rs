@@ -1034,6 +1034,7 @@ impl Controller {
             hover: b.s.hover,
             popup_open: self.popup.as_ref().is_some_and(|p| p.owner == b.s.hwnd),
             decor: windowsrice_ui::bar::Decor::from_style(&self.bar_conf(i).style),
+            anim_ms: self.anim_ms(),
         }
     }
 
@@ -1068,7 +1069,7 @@ impl Controller {
             });
     }
 
-    fn rebuild_bar(&mut self, i: usize, reason: &'static str) {
+    pub(crate) fn rebuild_bar(&mut self, i: usize, reason: &'static str) {
         if self.bars[i].s.shown_once
             && (!self.bars[i].s.visible || self.bars[i].collapsed)
             && reason != "layout"
@@ -1110,6 +1111,9 @@ impl Controller {
     }
 
     pub(crate) fn rebuild_all(&mut self, reason: &'static str) {
+        if reason != "animation" {
+            self.update_anim();
+        }
         for i in 0..self.bars.len() {
             self.rebuild_bar(i, reason);
         }
@@ -1375,6 +1379,7 @@ impl Controller {
     pub(crate) fn update_pause(&mut self) {
         let any = self.bars.iter().any(|b| b.s.visible && !b.collapsed) || self.popup.is_some();
         self.scheduler.set_paused(!any);
+        self.update_anim();
     }
 
     // ------------------------------------------------------------ data
@@ -2320,6 +2325,7 @@ impl Controller {
                 return Deferred::Quit;
             }
             TIMER_FULLSCREEN => self.check_fullscreen(),
+            crate::interact::TIMER_ANIM => self.on_anim_tick(),
             TIMER_DISPLAY => {
                 once(TIMER_DISPLAY);
                 self.sync_bars("display change");
