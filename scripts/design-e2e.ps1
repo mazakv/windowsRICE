@@ -43,7 +43,10 @@ function ByIdRaw([string]$id) { $A::FromHandle((Studio)).FindFirst($TS::Descenda
 function ById([string]$id) { $e = ByIdRaw $id; if ($e) { return $e }; try { Reveal $id } catch { $null } }
 function ByName([string]$name) { $A::FromHandle((Studio)).FindFirst($TS::Descendants, (New-Object System.Windows.Automation.PropertyCondition($A::NameProperty, $name))) }
 function Sel($e) { if (-not $e) { throw 'element not found' }; $e.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select(); Start-Sleep -Milliseconds 500 }
-function Inv([string]$id) { $e = ById $id; if (-not $e) { throw "no $id" }; $e.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 500 }
+# Actions are processed asynchronously: a control is invoked once it is
+# enabled (up to 5 s), so a click never lands on a still-disabled button.
+function Wait-Enabled($e, [string]$id) { for ($w = 0; $w -lt 33 -and $e -and -not $e.Current.IsEnabled; $w++) { Start-Sleep -Milliseconds 150; $e = ById $id }; if ($e -and -not $e.Current.IsEnabled) { throw "$id stayed disabled" }; $e }
+function Inv([string]$id) { $e = ById $id; if (-not $e) { throw "no $id" }; $e = Wait-Enabled $e $id; $e.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 500 }
 function SetVal([string]$id, [string]$v) { (ById $id).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($v); Start-Sleep -Milliseconds 500 }
 . (Join-Path $PSScriptRoot 'studio-nav.ps1')
 function Nav([string]$sec) { $null = Open-StudioPage $sec { param($x) ById $x }; Start-Sleep -Milliseconds 100 }
@@ -138,14 +141,7 @@ Check 'palette card selected' (IsSelected 'card:palette:0')
 $st = Apply
 $s2 = Bar-Shot '2-palette'
 $bg2 = Px $s2 0.38
-# With Windows "Transparency effects" on, the bar surface is translucent and
-# its pixel depends on the backdrop: the exact colour is then not checked.
-$transp = (Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -ErrorAction SilentlyContinue).EnableTransparency
-if ($transp -eq 1 -and (Hex $bg2) -ne '#0E2A3F') {
-    $checks.Add([pscustomobject]@{ check = 'Ocean Blue background on the real bar (#0E2A3F)'; pass = 'NOT RUN'; detail = "translucent surface (Windows transparency effects on): bar $(Hex $bg2)" }); Write-Host "NOT RUN Ocean Blue background (translucent surface) bar $(Hex $bg2)"
-} else {
-    Check 'Ocean Blue background on the real bar (#0E2A3F)' ((Hex $bg2) -eq '#0E2A3F') "bar $(Hex $bg2)"
-}
+Check 'Ocean Blue background on the real bar (#0E2A3F)' ((Hex $bg2) -eq '#0E2A3F') "bar $(Hex $bg2)"
 Check 'palette accent reaches the menu mark' ((Region-Diff $s1 $s2 0.0 0.02) -gt 5)
 
 # ---- 3. font
@@ -256,9 +252,15 @@ foreach ($f in 'run1.json', 'run2.json') {
     $j.popup_log | Where-Object { $_ -match 'apply verified' } | ForEach-Object { Write-Host "  $_" }
 }
 $j1 = Get-Content (Join-Path $Out 'run1.json') -Raw | ConvertFrom-Json
-# The number of fade frames depends on the machine's speed; a fade must happen.
+# The fade follows Windows "Animation effects" as the application read it:
+# on, Apply must fade (the frame count depends on the machine's speed);
+# off, no fade may run.
 $fades = @($j1.popup_log | Where-Object { $_ -match 'apply fade' }).Count
-Check 'Apply fades the new design in when animations are on' ($fades -ge 2) "$fades fade frames"
+if ($j1.windows_animations) {
+    Check 'Apply fades the new design in when animations are on' ($fades -ge 2) "$fades fade frames (Windows animation effects on)"
+} else {
+    Check 'Apply does not fade when Windows animation effects are off' ($fades -eq 0) "$fades fade frames (Windows animation effects off)"
+}
 $j2 = Get-Content (Join-Path $Out 'run2.json') -Raw | ConvertFrom-Json
 $log2 = @($j2.popup_log)
 $lastVerified = [array]::FindLastIndex([string[]]$log2, [Predicate[string]]{ param($l) $l -match 'apply verified' })

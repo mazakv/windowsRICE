@@ -11,14 +11,14 @@
 #   - -Prerelease matches the version (a suffix such as -rc.2 means pre-release)
 #   - CHANGELOG.md has a section for the version
 #   - the tag does not exist locally or on GitHub
-#   - the full check, the application checks, the package, its checksum and
-#     the installer verification all pass
+#   - the full check, the complete FullLocal application checks (never
+#     skippable), the package, its checksum and the installer verification
+#     all pass (-DryRun runs all of them too)
 # Never force-pushes; pushes only the new tag.
 param(
     [Parameter(Mandatory)][string]$Version,
     [switch]$Prerelease,
     [switch]$DryRun,
-    [switch]$SkipAppTests,
     # Tagger identity when git has no user.name/user.email configured.
     [string]$TaggerName,
     [string]$TaggerEmail,
@@ -67,10 +67,11 @@ Native { & (Join-Path $PSScriptRoot 'check.ps1') full } 'check.ps1 full'
 Native { cargo build --workspace --locked } 'debug build'
 Native { & (Join-Path $PSScriptRoot 'third-party-notices.ps1') -Check } 'third-party notices'
 
-if (-not $SkipAppTests) {
-    Step 'Application checks'
-    Native { & (Join-Path $PSScriptRoot 'app-tests.ps1') } 'application checks'
-}
+# The release acceptance profile: every application check of every suite
+# must pass on this machine's interactive desktop. There is no way to skip
+# it, and -DryRun runs it too.
+Step 'Application checks (FullLocal)'
+Native { & (Join-Path $PSScriptRoot 'app-tests.ps1') -Profile FullLocal } 'application checks (FullLocal)'
 
 Step 'Package, checksum, installer'
 $ps5 = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'

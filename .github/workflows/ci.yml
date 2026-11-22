@@ -76,7 +76,7 @@ jobs:
 
       - name: Application checks (Design Studio, UI Automation, end-to-end Apply, Phase 4/5)
         shell: pwsh
-        run: ./scripts/app-tests.ps1
+        run: ./scripts/app-tests.ps1 -Profile GitHubHosted
 
       - name: Package and installer verification
         shell: powershell
@@ -94,6 +94,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
           path: |
+            target/ci/
             target/phase8/e2e/
             target/phase6/verify/
             target/phase5/a11y/

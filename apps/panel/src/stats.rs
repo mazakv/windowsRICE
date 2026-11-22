@@ -21,6 +21,11 @@ pub struct Stats {
     pub warnings: Vec<String>,
     pub ms_process_to_window: Option<f64>,
     pub ms_process_to_first_frame: Option<f64>,
+    /// Windows "Animation effects" as read at startup (Phase 15): fades
+    /// and colour animations run only when it is on.
+    pub windows_animations: bool,
+    /// Windows "Transparency effects" (translucent surfaces need it).
+    pub windows_transparency: Option<bool>,
     /// Startup milestones: name and milliseconds since process creation.
     pub startup_milestones: Vec<(&'static str, f64)>,
     /// Seconds since start for every presented frame.

@@ -57,7 +57,10 @@ function ById($root, [string]$id) {
     if ($st -ne [IntPtr]::Zero -and $root -and $root.Current.NativeWindowHandle -eq [int]$st) { try { return (Reveal $id) } catch { return $null } }
     $null
 }
-function Invoke-Id($root, [string]$id) { $e = ById $root $id; if (-not $e) { throw "no element $id" }; $e.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 450 }
+# Actions are processed asynchronously: a control is invoked once it is
+# enabled (up to 5 s), so a click never lands on a still-disabled button.
+function Wait-Enabled($e, $root, [string]$id) { for ($w = 0; $w -lt 33 -and $e -and -not $e.Current.IsEnabled; $w++) { Start-Sleep -Milliseconds 150; $e = ByIdRaw $root $id; if (-not $e) { $e = Reveal $id } }; if ($e -and -not $e.Current.IsEnabled) { throw "$id stayed disabled" }; $e }
+function Invoke-Id($root, [string]$id) { $e = ById $root $id; if (-not $e) { throw "no element $id" }; $e = Wait-Enabled $e $root $id; $e.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 450 }
 . (Join-Path $PSScriptRoot 'studio-nav.ps1')
 function Select-Id($root, [string]$id) {
     if ($id -like 'nav:*') { $null = Open-StudioPage $id.Substring(4) { param($x) ById $root $x }; return }
@@ -308,7 +311,29 @@ Check 'text field: typing, Home, End, Left and Delete edit at the caret' ($pv -e
 # The user's clipboard is saved first and restored afterwards.
 Add-Type -AssemblyName System.Windows.Forms
 # Elements are scrolled into view first (the page can be longer than the window).
-function Press([string]$id) { $e = Reveal $id; if (-not $e) { throw "no element $id" }; $e.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 500 }
+function Press([string]$id) { $e = Reveal $id; if (-not $e) { throw "no element $id" }; $sh3 = [WSV.W]::FindWindowW('windowsRICE.Studio', [NullString]::Value); $e = Wait-Enabled $e (Root $sh3) $id; $e.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 500 }
+# The clipboard can be busy for a moment (another process holding it):
+# retry and confirm the text is there before pasting.
+function Set-Clip([string]$text) {
+    for ($k = 0; $k -lt 20; $k++) {
+        try { [System.Windows.Forms.Clipboard]::SetText($text); if ([System.Windows.Forms.Clipboard]::GetText() -eq $text) { return } } catch {}
+        Start-Sleep -Milliseconds 150
+    }
+    throw 'could not set the clipboard'
+}
+# A paste resets the analysis (its summary disappears). The clipboard may
+# still be held by this process for a moment, so retry until it took.
+function Paste-Code {
+    for ($k = 0; $k -lt 5; $k++) {
+        Press 'import:paste'
+        for ($w = 0; $w -lt 20; $w++) {
+            $sh4 = [WSV.W]::FindWindowW('windowsRICE.Studio', [NullString]::Value)
+            if (-not (ByIdRaw (Root $sh4) 'import:summary')) { return }
+            Start-Sleep -Milliseconds 100
+        }
+    }
+    throw 'paste did not take'
+}
 function NameOf([string]$id) { $e = Reveal $id; if ($e) { $e.Current.Name } else { '' } }
 $savedClip = $null
 try { if ([System.Windows.Forms.Clipboard]::ContainsText()) { $savedClip = [System.Windows.Forms.Clipboard]::GetText() } } catch {}
@@ -318,7 +343,7 @@ $code = [System.Windows.Forms.Clipboard]::GetText()
 Check 'Copy design code puts RICE Design Code on the clipboard' (($code -match '"format": "rice-design"') -and ($code -match '"top_bar"')) ($code.Length)
 # Paste code with a misspelt field: located error with a suggestion.
 $bad = $code -replace '"spacing"', '"spacingg"'
-[System.Windows.Forms.Clipboard]::SetText($bad)
+Set-Clip ($bad)
 Select-Id (Root $sh) 'nav:import'; $s = Root $sh
 Press 'import:paste'; $s = Root $sh
 Press 'import:analyze'; $s = Root $sh
@@ -336,21 +361,20 @@ Check 'fixing the line in the editor makes the design usable' ($sum -match '^Rea
 $c0 = (NameOf 'import:check0'); $c2 = (NameOf 'import:check2'); $c4 = (NameOf 'import:check4')
 Check 'checks are stated plainly (syntax, executable content, antivirus not run)' (($c0 -eq 'Syntax: passed') -and ($c2 -eq 'No executable content accepted: passed') -and ($c4 -eq 'Antivirus scan: not checked')) "$c0 | $c2 | $c4"
 # Script content is refused.
-[System.Windows.Forms.Clipboard]::SetText(($code -replace '"windowsRICE"', '"<script>alert(1)</script>"'))
-Press 'import:paste'; Press 'import:analyze'; $s = Root $sh
+Set-Clip (($code -replace '"windowsRICE"', '"<script>alert(1)</script>"'))
+Paste-Code; Press 'import:analyze'; $s = Root $sh
 $c2 = (NameOf 'import:check2')
 Check 'script content is refused (no executable content accepted: failed)' ($c2 -eq 'No executable content accepted: failed') $c2
 # Preview the fixed design (it becomes the draft; Undo returns).
-[System.Windows.Forms.Clipboard]::SetText(($code -replace '"name": "[^"]*"', '"name": "Imported test"'))
-Press 'import:paste'; Press 'import:analyze'
+Set-Clip (($code -replace '"name": "[^"]*"', '"name": "Imported test"'))
+Paste-Code; Press 'import:analyze'
 # Actions are processed asynchronously: wait for the analysis to finish and
 # the Preview button to become enabled before pressing it.
 for ($w = 0; $w -lt 40 -and -not ((NameOf 'import:summary') -match '^Ready' -and (Reveal 'import:preview').Current.IsEnabled); $w++) { Start-Sleep -Milliseconds 150 }
-$pv = Reveal 'import:preview'
-$pv.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+Press 'import:preview'
 for ($w = 0; $w -lt 30 -and (Status (Root $sh)) -notmatch '^Previewing'; $w++) { Start-Sleep -Milliseconds 150 }
 Check 'Preview loads the imported design into the draft' ((Status (Root $sh)) -match 'Previewing "Imported test"') (Status (Root $sh))
-(Reveal 'import:save').GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 500
+Press 'import:save'
 Check 'Save to My designs stores it as a preset' ((Test-Path (Join-Path $Out 'presets')) -and @(Get-ChildItem (Join-Path $Out 'presets') -Filter '*.toml' | Where-Object { (Get-Content $_.FullName -Raw) -match 'Imported test' }).Count -eq 1)
 Invoke-Id (Root $sh) 'undo'
 # Export a .ricepack and open it again through the Import page.
@@ -372,7 +396,7 @@ Select-Id (Root $sh) 'nav:styles'
 Press 'creator:new'; Start-Sleep -Milliseconds 700; $s = Root $sh
 Check 'Create custom design starts from scratch in Bar layout > Modules' (((Status $s) -match '^New design') -and (Test-StudioPageSelected 'modules' { param($x) ById $s $x })) (Status $s)
 Invoke-Id (Root $sh) 'undo'
-try { if ($null -ne $savedClip) { [System.Windows.Forms.Clipboard]::SetText($savedClip) } else { [System.Windows.Forms.Clipboard]::Clear() } } catch {}
+try { if ($null -ne $savedClip) { Set-Clip ($savedClip) } else { [System.Windows.Forms.Clipboard]::Clear() } } catch {}
 
 # ---- Reset (confirmation), unsaved close (cancel, then discard)
 Select-Id $s 'nav:advanced'; $s = Root $sh
@@ -405,13 +429,6 @@ Check 'clean exit, no errors, no accessibility lint problems' (($p.ExitCode -eq 
 
 $checks | Format-Table -AutoSize -Wrap | Out-String -Width 230
 $checks | ConvertTo-Json | Set-Content (Join-Path $Out 'checks.json') -Encoding utf8
-# On GitHub's runner the native Save/Open dialogs cannot be driven
-# reliably: their checks are reported as not run there (with the reason);
-# local runs, including scripts/release.ps1, require them to pass.
-if ($env:GITHUB_ACTIONS -eq 'true') {
-    $dialogChecks = @('export through the Save dialog', 'Export .ricepack writes a package', 'Open .ricepack checks the package and its design', 'malformed preset rejected with a reason', 'valid preset imported into the presets folder')
-    foreach ($c in $checks) { if (($dialogChecks -contains $c.check) -and ($c.pass -eq $false)) { $c.pass = 'NOT RUN'; $c.detail = "native file dialog not automatable on the CI runner; $($c.detail)" } }
-}
 $failed = @($checks | Where-Object { $_.pass -is [bool] -and -not $_.pass }).Count
 "{0} checks, {1} failed" -f $checks.Count, $failed
 Stop-Process -Id $bdProc.Id -Force -ErrorAction SilentlyContinue

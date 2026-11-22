@@ -405,6 +405,8 @@ impl Controller {
             args: raw,
             started: Some(Instant::now()),
             resources_start: process_counters(),
+            windows_animations: window::animations_enabled(),
+            windows_transparency: Some(appearance::transparency_effects_enabled()),
             ..Default::default()
         };
         let mode = system_mode(&args);

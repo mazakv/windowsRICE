@@ -1,22 +1,63 @@
-# Runs the real-application verification scripts against the release build,
-# one after another, and fails if any of them fails. Used by CI and by
-# scripts/release.ps1. Each script uses its own isolated configuration under
-# target\ and never touches %APPDATA%\windowsRICE.
+# Runs the real-application verification suites and writes one report:
+# target\ci\application-check-results.json (and a GitHub job summary when
+# run in GitHub Actions).
 #
-#   design-e2e      end-to-end Apply on the running bar (Phase 7-9)
-#   studio-verify   Design Studio window: keyboard, UI Automation, editing
-#   bar-a11y        bar and settings popup through UI Automation
-#   phase45-verify  Phase 4/5 checks: overflow, legibility over backdrops
+# Profiles:
+#   FullLocal     the release acceptance profile (scripts/release.ps1 always
+#                 uses it): every check of every suite must PASS. A check that
+#                 did not run is a failure.
+#   GitHubHosted  GitHub's hosted Windows runner (CI and the Release
+#                 workflow). Every suite runs and every check must PASS,
+#                 except the checks in the allowlist below, which need a real
+#                 interactive desktop with a GPU compositor; on the runner
+#                 those are reported NOT_RUN with their reason (never PASS).
+#                 Any other failure, any check that did not run outside the
+#                 allowlist, and any suite that aborts fail the run.
 #
-# Requires an interactive desktop session (a GitHub-hosted Windows runner
-# provides one) and target\release\windowsrice-panel.exe.
+# Each suite uses its own isolated configuration under target\ and never
+# touches %APPDATA%\windowsRICE. Requires an interactive desktop session
+# and target\release\windowsrice-panel.exe.
 param(
+    [ValidateSet('FullLocal', 'GitHubHosted')][string]$Profile = 'FullLocal',
     [string]$ProjectRoot = (Split-Path $PSScriptRoot -Parent),
     [string[]]$Only = @()
 )
 $ErrorActionPreference = 'Stop'
 Set-Location $ProjectRoot
 if (-not (Test-Path 'target\release\windowsrice-panel.exe')) { throw 'build the release first (cargo build --release -p windowsrice-panel)' }
+
+# Suites and where they write their checks.
+$Suites = [ordered]@{
+    'design-e2e'     = 'target\phase8\e2e\checks.json'
+    'studio-verify'  = 'target\phase6\verify\checks.json'
+    'bar-a11y'       = 'target\phase5\a11y\checks.json'
+    'phase45-verify' = 'target\phase45-verify\checks.json'
+    'panels-verify'  = 'target\phase13\panels\checks.json'
+    'bottom-verify'  = 'target\phase14\bottom\checks.json'
+    'media-verify'   = 'target\phase14\media\checks.json'
+}
+
+# GitHubHosted only: checks that need what GitHub's hosted runner does not
+# provide. Keyed "suite|check"; the value is the reason shown for NOT_RUN.
+$Focus = 'needs foreground keyboard focus on a real interactive desktop; the hosted runner does not give the bar window foreground focus'
+$Compositor = 'needs real DirectComposition translucency over the desktop; the hosted runner renders with software (WARP) and its captures do not show it'
+$Dialog = 'needs the native Windows Save/Open dialog driven by UI Automation; not automatable on the hosted runner'
+$HostedAllowlist = @{
+    'bar-a11y|hit testing returns the menu'                                     = $Focus
+    'bar-a11y|UIA SetFocus (provider view)'                                      = $Focus
+    'bar-a11y|keyboard: Tab, Left, Home, End'                                    = $Focus
+    'bar-a11y|UIA focus-changed events'                                          = $Focus
+    'bar-a11y|UIA Name-changed events'                                           = $Focus
+    'bar-a11y|auto-hide: collapsed to a 2 px strip, work area released'          = 'needs the real mouse pointer away from the top edge; the hosted runner''s pointer position is not controlled'
+    'design-e2e|translucent background shows the backdrop through the real bar' = $Compositor
+    'design-e2e|Ocean Blue background on the real bar (#0E2A3F)'                = $Compositor
+    'studio-verify|export through the Save dialog'                               = $Dialog
+    'studio-verify|malformed preset rejected with a reason'                      = $Dialog
+    'studio-verify|valid preset imported into the presets folder'                = $Dialog
+    'studio-verify|Export .ricepack writes a package'                            = $Dialog
+    'studio-verify|Open .ricepack checks the package and its design'             = $Dialog
+    'panels-verify|Volume panel'                                                 = 'needs an audio output device; the hosted runner has none'
+}
 
 # The scripts capture screenshots (only over a pinned test backdrop) with the
 # small `shot` tool of the Phase 3.5 spike workspace.
@@ -29,26 +70,94 @@ if (-not (Test-Path $shot)) {
     if ($code -ne 0 -or -not (Test-Path $shot)) { throw 'could not build the screenshot tool' }
 }
 
-$suite = @('design-e2e', 'studio-verify', 'bar-a11y', 'phase45-verify', 'panels-verify', 'bottom-verify', 'media-verify')
 # `pwsh -File` passes "a,b" as one string; accept both forms.
 $Only = @($Only | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
-if ($Only.Count) { $suite = @($suite | Where-Object { $Only -contains $_ }) }
+$names = @($Suites.Keys | Where-Object { $Only.Count -eq 0 -or $Only -contains $_ })
+if ($Only.Count -and $names.Count -ne $Only.Count) { throw "unknown suite in -Only: $($Only -join ', ')" }
+
+# Environment, recorded with the results.
+Add-Type -AssemblyName System.Windows.Forms
+$scr = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+$envInfo = [ordered]@{
+    runner      = $(if ($env:GITHUB_ACTIONS -eq 'true') { "GitHub-hosted ($env:RUNNER_OS, $env:ImageOS)" } else { 'local machine' })
+    os          = [Environment]::OSVersion.VersionString
+    screen      = "$($scr.Width)x$($scr.Height)"
+    commit      = (git rev-parse --short HEAD 2>$null)
+    started_utc = (Get-Date).ToUniversalTime().ToString('s') + 'Z'
+}
+
 $host5 = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-$results = @()
-foreach ($s in $suite) {
-    Write-Host "`n=== $s"
+$results = [System.Collections.Generic.List[object]]::new()
+function Add-Result($suite, $name, $status, $reason, $detail) {
+    $results.Add([pscustomobject][ordered]@{ suite = $suite; name = $name; status = $status; reason = $reason; detail = "$detail"; profile = $Profile })
+}
+foreach ($s in $names) {
+    Write-Host "`n=== $s ($Profile)"
+    $file = Join-Path $ProjectRoot $Suites[$s]
+    if (Test-Path $file) { Remove-Item $file -Force }
     $sw = [Diagnostics.Stopwatch]::StartNew()
-    # Windows PowerShell 5.1: the scripts use its UI Automation assemblies.
     $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
     $lines = @(& $host5 -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "$s.ps1") 2>&1 | ForEach-Object { "$_" })
     $code = $LASTEXITCODE
     $ErrorActionPreference = $prev
     $lines | Out-Host
     Get-Process windowsrice-panel -ErrorAction SilentlyContinue | Stop-Process -Force
-    $summary = @($lines | Where-Object { $_ -match '^\d+ checks, ' }) | Select-Object -Last 1
-    $results += [pscustomobject]@{ Script = $s; Exit = $code; Seconds = [math]::Round($sw.Elapsed.TotalSeconds); Summary = $summary }
+    if (-not (Test-Path $file)) {
+        $err = @($lines | Where-Object { $_ -match 'Exception|throw|error' }) | Select-Object -First 2
+        Add-Result $s "$s finished" 'FAIL' $null "the suite aborted after $([math]::Round($sw.Elapsed.TotalSeconds)) s without results: $($err -join ' | ')"
+        continue
+    }
+    foreach ($c in @(Get-Content $file -Raw | ConvertFrom-Json)) {
+        $key = "$s|$($c.check)"
+        $ran = $c.pass -is [bool]
+        if ($ran -and $c.pass) {
+            Add-Result $s $c.check 'PASS' $null $c.detail
+        } elseif ($Profile -eq 'GitHubHosted' -and $HostedAllowlist.ContainsKey($key)) {
+            Add-Result $s $c.check 'NOT_RUN' ('UNSUPPORTED HOSTED RUNNER ENVIRONMENT: ' + $HostedAllowlist[$key]) $c.detail
+        } elseif ($ran) {
+            Add-Result $s $c.check 'FAIL' $null $c.detail
+        } else {
+            Add-Result $s $c.check 'FAIL' $null "required check did not run ($($c.pass)): $($c.detail)"
+        }
+    }
+    # A suite that exits with an error must have a non-passing check to show for it.
+    if ($code -ne 0 -and -not (@($results | Where-Object { $_.suite -eq $s -and $_.status -ne 'PASS' }).Count)) {
+        Add-Result $s "$s exit code" 'FAIL' $null "the suite exited with code $code"
+    }
 }
-$results | Format-Table -AutoSize | Out-String -Width 200 | Out-Host
-$bad = @($results | Where-Object { $_.Exit -ne 0 -or -not $_.Summary })
-if ($bad.Count) { Write-Host ('FAILED: ' + (($bad | ForEach-Object { $_.Script }) -join ', ')); exit 1 }
-Write-Host 'all application checks passed'
+
+$pass = @($results | Where-Object status -eq 'PASS').Count
+$fail = @($results | Where-Object status -eq 'FAIL').Count
+$notRun = @($results | Where-Object status -eq 'NOT_RUN')
+$report = [ordered]@{
+    profile     = $Profile
+    environment = $envInfo
+    totals      = [ordered]@{ checks = $results.Count; passed = $pass; failed = $fail; not_run = $notRun.Count }
+    checks      = $results
+}
+New-Item -ItemType Directory -Force (Join-Path $ProjectRoot 'target\ci') | Out-Null
+$out = Join-Path $ProjectRoot 'target\ci\application-check-results.json'
+$report | ConvertTo-Json -Depth 6 | Set-Content $out -Encoding utf8
+
+$md = [System.Collections.Generic.List[string]]::new()
+$md.Add("## Application checks ($Profile)")
+$md.Add('')
+$md.Add("Total **$($results.Count)** · passed **$pass** · failed **$fail** · not run **$($notRun.Count)**")
+$md.Add('')
+foreach ($s in $names) {
+    $r = @($results | Where-Object suite -eq $s)
+    $md.Add("- ``$s``: $(@($r | Where-Object status -eq 'PASS').Count) passed, $(@($r | Where-Object status -eq 'FAIL').Count) failed, $(@($r | Where-Object status -eq 'NOT_RUN').Count) not run")
+}
+if ($fail) {
+    $md.Add(''); $md.Add('### Failed')
+    foreach ($r in $results | Where-Object status -eq 'FAIL') { $md.Add("- ``$($r.suite)`` $($r.name): $($r.detail)") }
+}
+if ($notRun.Count) {
+    $md.Add(''); $md.Add('### Not run (not passed)')
+    foreach ($r in $notRun) { $md.Add("- ``$($r.suite)`` $($r.name) — $($r.reason)") }
+}
+$md -join "`n" | Out-Host
+if ($env:GITHUB_STEP_SUMMARY) { $md -join "`n" | Add-Content $env:GITHUB_STEP_SUMMARY -Encoding utf8 }
+Write-Host "report: $out"
+if ($fail) { Write-Host "FAILED: $fail check(s)"; exit 1 }
+Write-Host "all required application checks passed ($Profile)"
