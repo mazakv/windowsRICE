@@ -30,9 +30,11 @@ use crate::style::PanelStyle;
 use crate::text::TextMeasure;
 use crate::tree::{Element, ElementId, Role, UiTree, intern};
 
+/// Smallest Studio client area (Phase 12: fits a 1024×768 screen and the
+/// work area of a 1366×768 laptop at 100 %; the section area scrolls).
 pub const MIN_SIZE: Size = Size {
-    w: 1180.0,
-    h: 760.0,
+    w: 1000.0,
+    h: 680.0,
 };
 /// The Studio keeps the bar to this many modules so every card fits.
 pub const STUDIO_MAX_MODULES: usize = 20;

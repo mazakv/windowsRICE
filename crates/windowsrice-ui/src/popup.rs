@@ -60,6 +60,8 @@ pub enum PopupAction {
     ToggleAllMonitors,
     OpenStudio,
     Exit,
+    /// A control of a module panel (Phase 13).
+    Panel(crate::panels::PanelAction),
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]

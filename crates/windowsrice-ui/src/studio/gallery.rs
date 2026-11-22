@@ -1530,7 +1530,8 @@ fn color_editor(u: &mut Ui, g: ElementId, r: Rect) {
         StudioAction::SetColor(None),
     );
     y += 40.0;
-    if !m.recent_colors.is_empty() {
+    // Recent colours only when the panel has room (small windows).
+    if !m.recent_colors.is_empty() && y + 20.0 + sz <= r.bottom() {
         u.label(
             g,
             "color:recent",

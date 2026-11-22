@@ -293,6 +293,8 @@ pub(crate) struct PopupWin {
     pub(crate) origin: (i32, i32),
     pub(crate) size: PhysRect,
     pub(crate) actions: Vec<(ElementId, windowsrice_ui::popup::PopupAction)>,
+    /// `None` for the settings popup; a module panel otherwise (Phase 13).
+    pub(crate) kind: Option<windowsrice_ui::panels::PanelKind>,
 }
 
 pub(crate) struct Controller {
@@ -319,6 +321,8 @@ pub(crate) struct Controller {
     pub(crate) monitor_signature: Vec<(String, [i32; 4], u32, bool)>,
     pub(crate) suspended: bool,
     pub(crate) studio: Option<crate::studio_win::StudioWin>,
+    /// Module panels: history, calendar, notices (Phase 13).
+    pub(crate) ix: crate::interact::Interactive,
 }
 
 pub(crate) fn system_mode(args: &Args) -> Option<Mode> {
@@ -337,7 +341,7 @@ pub(crate) fn font_config(style: &PanelStyle, lang: Lang) -> FontConfig {
     }
 }
 
-fn phys(r: &windowsrice_windows::display::PixelRect) -> PhysRect {
+pub(crate) fn phys(r: &windowsrice_windows::display::PixelRect) -> PhysRect {
     PhysRect {
         left: r.left,
         top: r.top,
@@ -503,6 +507,7 @@ impl Controller {
             monitor_signature: Vec::new(),
             suspended: false,
             studio: None,
+            ix: Default::default(),
         };
         c.refresh_clock_only();
         c.install_hooks();
@@ -1045,7 +1050,11 @@ impl Controller {
         }
     }
 
-    fn rebuild_popup(&mut self) {
+    pub(crate) fn rebuild_popup(&mut self) {
+        if let Some(kind) = self.popup.as_ref().and_then(|p| p.kind) {
+            self.rebuild_panel(kind);
+            return;
+        }
         let model = self.popup_model();
         let Some(p) = self.popup.as_mut() else { return };
         let ps = build_popup(
@@ -1263,7 +1272,7 @@ impl Controller {
         };
     }
 
-    pub fn on_readings(&mut self, _source: usize) {
+    pub fn on_readings(&mut self, source: usize) {
         let fresh = self.scheduler.readings();
         let r = &mut self.readings;
         r.cpu = fresh.cpu;
@@ -1276,7 +1285,11 @@ impl Controller {
         r.battery = fresh.battery;
         r.notifications = fresh.notifications;
         self.stats.samples += 1;
+        self.record_history(source);
         self.rebuild_all("sample");
+        if let Some(k) = self.popup.as_ref().and_then(|p| p.kind) {
+            self.rebuild_panel(k);
+        }
         if self.studio.is_some() {
             self.studio_rebuild();
         }
@@ -1564,7 +1577,7 @@ impl Controller {
 
     fn activate_bar_element(&mut self, i: usize, id: ElementId) -> Deferred {
         if Some(id) != menu_element(&self.config().bar.modules) {
-            return Deferred::Nothing;
+            return self.module_activated(i, id);
         }
         self.bars[i].s.focus = Some(id);
         if self
@@ -1583,10 +1596,19 @@ impl Controller {
             if self.bars[i].collapsed {
                 self.expand_bar(i);
             }
-            let hit = self.bars[i]
-                .s
-                .tree_hit(x, y)
-                .filter(|h| Some(*h) == menu_element(&self.config().bar.modules));
+            let menu = menu_element(&self.config().bar.modules);
+            let hit = self.bars[i].s.tree_hit(x, y).filter(|h| {
+                Some(*h) == menu
+                    || self.bars[i]
+                        .s
+                        .host
+                        .state
+                        .borrow()
+                        .scene
+                        .tree
+                        .get(*h)
+                        .is_some_and(|e| e.role == windowsrice_ui::tree::Role::Button)
+            });
             if hit != self.bars[i].s.hover {
                 self.bars[i].s.pending_input = Some(Instant::now());
                 self.bars[i].s.hover = hit;
@@ -1626,6 +1648,7 @@ impl Controller {
                 Some(id) if Some(id) == menu_element(&self.config().bar.modules) => {
                     self.activate_bar_element(i, id)
                 }
+                Some(id) => self.module_activated(i, id),
                 _ => Deferred::Nothing,
             };
         }
@@ -1811,6 +1834,7 @@ impl Controller {
                 bottom: y + 1,
             },
             actions: Vec::new(),
+            kind: None,
         });
         self.popup_message = None;
         self.stats.menu_opens += 1;
@@ -1932,6 +1956,7 @@ impl Controller {
                 self.set_theme(&theme);
                 Deferred::Nothing
             }
+            PopupAction::Panel(a) => self.panel_action(a),
             other => {
                 self.change_bar(&other);
                 Deferred::Nothing

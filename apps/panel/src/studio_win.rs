@@ -1473,6 +1473,12 @@ impl Controller {
                             "이번 실행에만 적용했습니다 (--theme 또는 --mode 사용 중). 바 {bars}개에서 확인: {what}."
                         ),
                     };
+                    let title = if lang == Lang::En {
+                        "Design applied"
+                    } else {
+                        "디자인 적용됨"
+                    };
+                    self.notice(title, &what);
                     self.status(msg, Severity::Success);
                 } else {
                     self.stats

@@ -19,6 +19,7 @@ pub mod keyboard;
 pub mod legibility;
 pub mod module;
 pub mod panel;
+pub mod panels;
 pub mod placement;
 pub mod popup;
 pub mod strings;

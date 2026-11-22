@@ -571,6 +571,8 @@ pub fn build_bar(
             }
             if Some(v.element) == menu_id {
                 e = e.invokable().expanded(model.popup_open);
+            } else if v.role == Role::Button {
+                e = e.invokable();
             }
             tree.add(gid, e).expect("module ids are unique");
         }

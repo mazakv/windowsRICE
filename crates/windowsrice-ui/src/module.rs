@@ -75,6 +75,28 @@ pub struct BarReadings {
     pub notifications: Reading<NotificationState>,
     /// windowsRICE warnings shown by the menu module's status.
     pub warnings: Vec<String>,
+    /// Unread windowsRICE notices (the notification badge, Phase 13).
+    /// Windows' own notifications are not readable by this installation.
+    pub app_unread: usize,
+}
+
+/// Modules that open a detail panel when clicked (Phase 13).
+pub fn has_panel(kind: ModuleKind) -> bool {
+    use ModuleKind as K;
+    matches!(
+        kind,
+        K::Cpu
+            | K::Gpu
+            | K::Vram
+            | K::Ram
+            | K::Network
+            | K::Upload
+            | K::Download
+            | K::Volume
+            | K::Battery
+            | K::Clock
+            | K::Notifications
+    )
 }
 
 /// One drawable part of a module.
@@ -622,7 +644,18 @@ pub fn view(
                         ("\u{E708}", "알림: 전체 화면 앱이 일시 중지함")
                     }
                 };
-                base(name.to_owned(), vec![icon(glyph)], true, None)
+                let mut pieces = vec![icon(glyph)];
+                let mut name = name.to_owned();
+                if let Some(b) = crate::panels::badge_text(r.app_unread) {
+                    pieces.push(text(b));
+                    name = match lang {
+                        Lang::En => format!("{name}, {} unread windowsRICE notices", r.app_unread),
+                        Lang::Ko => {
+                            format!("{name}, 읽지 않은 windowsRICE 알림 {}개", r.app_unread)
+                        }
+                    };
+                }
+                base(name, pieces, true, None)
             }
             other => {
                 let what = kind_name(m.kind, lang);
@@ -648,6 +681,19 @@ pub fn view(
     };
     if m.max_width.is_some() {
         v.trimmable = true;
+    }
+    // Clicking (or Enter) opens the module's detail panel.
+    if has_panel(m.kind) && v.role == Role::Text {
+        v.role = Role::Button;
+        if v.help.is_none() {
+            v.help = Some(
+                match lang {
+                    Lang::En => "Press Enter for details",
+                    Lang::Ko => "Enter를 누르면 자세히 표시",
+                }
+                .to_owned(),
+            );
+        }
     }
     if m.kind == K::Clock && m.show_date == Some(false) {
         v.pieces.retain(|p| {

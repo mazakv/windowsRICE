@@ -125,6 +125,10 @@ pub struct ModuleConfig {
     /// Clock only: 12-hour time.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hour12: Option<bool>,
+    /// Clock only: additional time zones shown in the calendar panel, as
+    /// Windows time zone ids such as "Korea Standard Time" (at most 4).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub zones: Option<Vec<String>>,
     // ---- Phase 9: per-module appearance (all optional; the bar style
     // applies when unset).
     /// What this module shows (overrides `bar.style.content`).
@@ -192,6 +196,7 @@ impl ModuleConfig {
             show_label: None,
             max_width: None,
             hour12: None,
+            zones: None,
             content: None,
             color: None,
             background: None,
@@ -865,6 +870,27 @@ impl BarConfig {
                     "module {:?}: show_label does not apply to this kind",
                     m.id
                 ));
+            }
+            if let Some(z) = &m.zones {
+                if z.len() > 4 {
+                    p.push(format!(
+                        "module {:?}: zones lists more than 4 time zones",
+                        m.id
+                    ));
+                }
+                for id in z {
+                    if id.is_empty()
+                        || id.len() > 64
+                        || !id
+                            .chars()
+                            .all(|c| c.is_ascii_alphanumeric() || " ()+-.".contains(c))
+                    {
+                        p.push(format!(
+                            "module {:?}: zones entry {id:?} is not a Windows time zone id",
+                            m.id
+                        ));
+                    }
+                }
             }
             if let Some(w) = m.max_width
                 && !(40..=800).contains(&w)

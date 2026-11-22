@@ -29,7 +29,7 @@ if (-not (Test-Path $shot)) {
     if ($code -ne 0 -or -not (Test-Path $shot)) { throw 'could not build the screenshot tool' }
 }
 
-$suite = @('design-e2e', 'studio-verify', 'bar-a11y', 'phase45-verify')
+$suite = @('design-e2e', 'studio-verify', 'bar-a11y', 'phase45-verify', 'panels-verify')
 if ($Only.Count) { $suite = @($suite | Where-Object { $Only -contains $_ }) }
 $host5 = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
 $results = @()

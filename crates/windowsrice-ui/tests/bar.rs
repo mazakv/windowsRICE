@@ -92,6 +92,7 @@ fn readings() -> BarReadings {
         battery: Reading::Absent,
         notifications: Reading::Ok(NotificationState::Accepting),
         warnings: Vec::new(),
+        app_unread: 0,
     }
 }
 
