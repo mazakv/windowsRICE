@@ -2,6 +2,26 @@
 
 windowsRICE is a Rust-based desktop customization environment for Windows 11 Pro, inspired by HyDE, Hyprland, Waybar and macOS. It runs alongside Explorer as a normal user-level application and never replaces the Windows shell, sign-in screen or any protected system interface.
 
+# See windowsRICE in Action
+
+[![windowsRICE: the native top bar for Windows 11. Click to open the showcase videos.](docs/media/windowsRICE-hero-poster.png)](https://github.com/mazakv/windowsRICE/releases/tag/windowsrice-showcase-2026-11-25)
+
+windowsRICE is a native top bar for Windows 11, written in Rust and drawn with Direct2D. You can restyle every part of it live in the built-in Design Studio. It runs beside Explorer and never replaces the shell. It works offline, has no telemetry, and is MIT licensed.
+
+- **Design Studio.** 26 complete templates, a live preview of the real bar, and apply, undo and revert.
+- **Animated colours.** Rainbow text, accents and backgrounds driven by keyframes. Animations pause while the bar is hidden.
+- **Interactive modules.** Click CPU, memory, the clock and more for detail panels and a calendar. Values Windows cannot measure are shown as unavailable, never invented.
+- **Safe design sharing.** RICE Design Code and `.ricepack` files are analysed as data and never executed.
+- **Readable by rule.** Colour pairs below 4.5:1 contrast are refused.
+
+| Video | Length | Download |
+|---|---|---|
+| Website hero loop (muted) | 12 s | [MP4](https://github.com/mazakv/windowsRICE/releases/download/windowsrice-showcase-2026-11-25/windowsRICE-hero.mp4) · [WebM](https://github.com/mazakv/windowsRICE/releases/download/windowsrice-showcase-2026-11-25/windowsRICE-hero.webm) |
+| Commercial | 30 s | [windowsRICE-commercial-30s.mp4](https://github.com/mazakv/windowsRICE/releases/download/windowsrice-showcase-2026-11-25/windowsRICE-commercial-30s.mp4) |
+| Full introduction | 60 s | [windowsRICE-introduction.mp4](https://github.com/mazakv/windowsRICE/releases/download/windowsrice-showcase-2026-11-25/windowsRICE-introduction.mp4) |
+
+All the videos, their specifications and their SHA-256 checksums are in the **[Cinematic Product Showcase release](https://github.com/mazakv/windowsRICE/releases/tag/windowsrice-showcase-2026-11-25)**. More detail is in [`docs/promotional-videos.md`](docs/promotional-videos.md). The showcase is a media release, not a software version.
+
 ## Status
 
 Release candidate **0.1.0-rc.2** (Phases 11–15, `docs/phase11-15-implementation.md`): a Design Studio organised as Templates, Bar layout, Appearance, Motion & media, My designs and Advanced, with 26 complete templates; RICE Design Code and `.ricepack` sharing with a safe analyzer (`docs/design-code.md`); interactive modules with detail panels, a calendar and a notification center; an optional bottom bar; animated colours; image backgrounds and video poster frames. Earlier phases: release candidate 0.1.0-rc.1 (Phase 10), product readiness (Phase 9), the visual Design Studio (Phase 8) and live design (Phase 7). Items that need a person or other hardware (Narrator, real DPI changes, multiple monitors, a real Explorer restart) are NOT VERIFIED and listed in the reports. The rendering stack is Direct2D + DirectWrite + DirectComposition with a UI Automation provider (`docs/adr/ADR-0002-ui-framework.md`); the bar architecture is in `docs/adr/ADR-0003-top-bar.md`, the Design Studio in `docs/adr/ADR-0004-design-studio.md`, and live design application with the visual galleries in `docs/adr/ADR-0005-visual-design-studio.md`. While the bar runs it reserves its strip of the screen through the Windows application desktop toolbar interface, so maximised windows start below it; the reservation ends when it exits. No Windows setting, registry value or shell configuration is changed.
@@ -80,7 +100,7 @@ User configuration will live in `%APPDATA%\windowsRICE\config.toml`. Logs, the c
 
 ## Releases
 
-Pre-releases are published as GitHub Releases by the `Release` workflow when a version tag is pushed; `scripts/release.ps1` verifies everything before tagging (`docs/releasing.md`). The repository is private, so its releases are visible only to people with access. Builds are not code-signed; verify the SHA-256 published with each zip. Changes are listed in `CHANGELOG.md`.
+Pre-releases are published as GitHub Releases by the `Release` workflow when a version tag is pushed; `scripts/release.ps1` verifies everything before tagging (`docs/releasing.md`). The repository is public, so anyone can download its releases. Promotional videos are published separately as media releases (`windowsrice-showcase-*` tags), which do not trigger the `Release` workflow. Builds are not code-signed; verify the SHA-256 published with each zip. Changes are listed in `CHANGELOG.md`.
 
 ## Contributing and security
 
